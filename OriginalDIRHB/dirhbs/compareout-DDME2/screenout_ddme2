@@ -1,0 +1,34 @@
+  *                DD-ME2    
+
+  ******************************************  
+  *           Fortran 77 Code              *  
+  *         Spherical H.O. basis            *  
+  * Dirac-Hartree-Bogoliubov calculation   *  
+  *        with density-dependent          *  
+  * meson-exchange or point coupling force *  
+  *          and separable pairing         *  
+  * -------------------------------------- *  
+  *      Niksic, Paar, Vretenar, Ring      *  
+  *           2/ 2/2014/21:45:08           *
+  *       Kr  78  N =  42  Z =  36
+  *                DD-ME2    
+  ******************************************  
+  1.It. si =    0.0000000  E/A =    0.0000 R =    0.0000  mix = 0.50
+  2.It. si =   78.0921892  E/A =   -8.4053 R =    4.1825  mix = 0.50
+  3.It. si =   41.4797548  E/A =   -8.4588 R =    4.1564  mix = 0.50
+  4.It. si =   30.0928675  E/A =   -8.4957 R =    4.1268  mix = 0.50
+  5.It. si =   21.9987782  E/A =   -8.5091 R =    4.1038  mix = 0.50
+  6.It. si =    7.8356748  E/A =   -8.5104 R =    4.0711  mix = 0.50
+  7.It. si =    2.3018002  E/A =   -8.5117 R =    4.0830  mix = 0.50
+  8.It. si =    0.5832170  E/A =   -8.5124 R =    4.0855  mix = 0.50
+  9.It. si =    0.2512677  E/A =   -8.5128 R =    4.0866  mix = 0.50
+ 10.It. si =    0.1337660  E/A =   -8.5143 R =    4.0884  mix = 0.50
+ 11.It. si =    0.0838272  E/A =   -8.5141 R =    4.0880  mix = 0.50
+ 12.It. si =    0.0028761  E/A =   -8.5140 R =    4.0878  mix = 0.50
+ 13.It. si =    0.0010601  E/A =   -8.5140 R =    4.0878  mix = 0.50
+ 14.It. si =    0.0004273  E/A =   -8.5141 R =    4.0878  mix = 0.50
+ 15.It. si =    0.0001507  E/A =   -8.5141 R =    4.0878  mix = 0.50
+ 16.It. si =    0.0000235  E/A =   -8.5141 R =    4.0878  mix = 0.50
+ 17.It. si =    0.0000097  E/A =   -8.5141 R =    4.0878  mix = 0.50
+ 18.It. si =    0.0000063  E/A =   -8.5141 R =    4.0878  mix = 0.50
+Kr  78: Iteration converged after  18 steps   si =      0.0000005249

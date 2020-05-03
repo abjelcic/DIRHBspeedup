@@ -1,0 +1,8 @@
+n0f,n0b  =   12   20               ! number of oscillator shells(F,B)
+inin     =    1    1               ! initialization of potentials 
+Kr 78                              ! nucleus under consideration
+c-------------------------------------------------------------------
+Init.Gap =    1.000     1.000      ! Initial values for the Gap par
+c-------------------------------------------------------------------
+Force    =  DD-ME2                 ! Parameterset of the Lagrangian
+c-------------------------------------------------------------------

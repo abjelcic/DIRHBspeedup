@@ -1,0 +1,12 @@
+Each directory corresponds to different symmetry imposed on the solution:
+-dirhbs: spherical nuclei
+-dirhbz: deformed nuclei with axial symmetry
+-dirhbt: deformed triaxial nuclei  
+
+The user should compile the code with "make" and run it with command "./run".
+
+The input file, either DD-PC1 or DD-ME2, is determined by the value of the 
+"Force" field in the "dirhb.dat" file.
+Examples of "dirhb.dat" files for each case can be found in the "compareout-..."
+directories as can the expected results.
+

@@ -1,0 +1,90 @@
+c-----------------------------------------------------------------------
+c     Parameter file for: 
+c     n0f =  12  n0b =  20
+c-----------------------------------------------------------------------
+c
+c---- maximal number for GFV
+      parameter (   igfv =       100 )
+c
+c---- number of gauss-meshpoints
+      parameter (    ngh =        48 )
+
+c---- maximal number of (k,parity)-blocks
+      parameter (    nbx =        2 )      
+c
+c---- maximal oscillator quantum number for large components
+      parameter (   n0fx = 12 )
+      parameter (   kmaxp= n0fx/2  )
+      parameter (   n0fp = (kmaxp+1)*(kmaxp+2)*(4*kmaxp+3)/6)
+      
+      parameter (   kmaxn= n0fx/2 -1+mod(n0fx,2) )
+      parameter (   n0fn = (kmaxn+1)*(kmaxn+2)*(4*kmaxn+9)/6)
+      parameter (   nfx = max(n0fp,n0fn)  )
+       
+c---- maximal oscillator quantum number for small componente
+      parameter (   n0gx =       n0fx+1 ) 
+      parameter (   kmaxp1= n0gx/2  )
+      parameter (   n0gp = (kmaxp1+1)*(kmaxp1+2)*(4*kmaxp1+3)/6)
+      
+      parameter (   kmaxn1= n0gx/2 -1+mod(n0gx,2) )
+      parameter (   n0gn = (kmaxn1+1)*(kmaxn1+2)*(4*kmaxn1+9)/6)
+      parameter (   ngx = max(n0gp,n0gn)  )
+      
+      parameter (   ndx = max(nfx,ngx)  )
+      
+c---- max. number of eigenstates for protons or neutrons
+      parameter (    nkx =       n0gp+n0gn )      
+c
+c---- max. number of all levels for protons or neutrons
+      parameter (    ntx =      n0fp+n0fn+n0gp+n0gn )
+
+c---- maximal oscillator quantum number for bosons
+      parameter (   n0bx =        20 )
+c---- maximal dimension for boson-matrix
+      parameter (   nobx =  (n0bx+2)*(n0bx+4)*(n0bx+6)/48      )
+      parameter (   nox1 = (2*n0gx+2)*(2*n0gx+4)*(2*n0gx+6)/48 )
+c      
+c
+c---- maximal n for Hermite polynomials
+      parameter (   nmax =        20 )
+c
+c-----------------------------------------------------------------------
+c
+      parameter (nb2x  = nbx+nbx)
+      parameter (nhx   = nfx+ngx)
+      parameter (nddx  = ndx*ndx)
+      parameter (nhfbx = nhx+nhx)
+      parameter (nhfbqx= nhfbx*nhfbx)
+      parameter (nfgx  = nfx*ngx)
+      parameter (nhhx  = nhx*nhx)
+      parameter (noox  = nobx*nobx)
+      parameter (ngauss= (ngh+1)*(ngh+1)*(ngh+1))
+      parameter (kmax  = n0fx+1)
+      parameter (kmax2 = 2*kmax)
+      
+      parameter (lwork=1+6*nhfbx+2*nhfbx**2)
+      parameter (liwork=3+5*nhfbx)
+c-----Pairing interaction
+      parameter (npmax = 2*n0fx)
+      parameter (np2   = npmax/2+1)
+      parameter (nsepx = (npmax+2)*(npmax+4)*(npmax+6)/48)
+      
+      parameter(mvfp = n0fp*(n0fp+1)/2 )
+      parameter(mvfn = n0fn*(n0fn+1)/2 )
+      parameter(mvfx = mvfp+mvfn )
+      
+      parameter(mvgp = n0gp*(n0gp+1)/2)
+      parameter(mvgn = n0gn*(n0gn+1)/2)
+      parameter(mvgx = mvgp+mvgn)
+      
+      parameter(mvtp= (n0fp+n0gn)*(n0fp+n0gn+1)/2 )
+      parameter(mvtn= (n0fn+n0gp)*(n0fn+n0gp+1)/2 )
+      parameter(mvtx= mvtp+mvtn)
+c-----Coulomb interaction
+c
+      parameter (ndcoul = 160)
+      parameter (ndneta = 159)
+      parameter (furmax = 0.25)
+      parameter (boucou = 40.0)
+      parameter (ndkart = 3)
+      parameter (nupols = 6)

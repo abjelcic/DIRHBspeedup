@@ -1,0 +1,66 @@
+c-----------------------------------------------------------------------
+c     Parameter file for: 
+c     n0f =  22  n0b =  20
+c-----------------------------------------------------------------------
+c
+c---- maximal number for GFV
+      parameter (   igfv =       100 )
+c
+c---- number of gauss-meshpoints
+      parameter (    ngh =        48 )
+      parameter (    ngh2=      2*ngh)
+
+c---- maximal oscillator quantum number for fermions
+      parameter (   n0fx =        12 )
+c---- for the separable pairing
+      parameter ( nnmax = n0fx)
+c
+c---- maximal number of kappa-blocks
+      parameter (    nbx =  2*n0fx+2 )
+c
+c---- max. number of all levels for protons or neutrons
+      parameter (    ntx =       (n0fx+1)*(n0fx+2)+n0fx )
+c
+c---- max. number of eigenstates for protons or neutrons
+      parameter (    nkx =      (n0fx+2)*(n0fx+3)/2-2 )
+c
+c---- maximal nr-quantum number for fermions
+      parameter (    nrx =        (n0fx+1)/2+1 )
+c
+c---- maximal l-quantum number for fermions
+      parameter (    nlx =        n0fx+1 )
+c
+c---- nfx: maximal dimension F of one k-block
+      parameter (    ndx =        nrx )
+c
+c---- ngx: maximal dimension G of one k-block
+      parameter (    ngx =        nrx )
+      parameter (    nfx =        nrx )
+c
+c---- maximal oscillator quantum number for bosons
+      parameter (   n0bx =        20 )
+c
+c---- maximal dimension for boson-matrix
+      parameter (    nox =        n0bx/2+1 )
+c
+c---- maximal number of ff-pairs
+      parameter (mvx  = (n0fx+2)*(2*n0fx+3)*(n0fx+4)/24 )
+      parameter (mvxg = (n0fx+3)*(2*n0fx+5)*(n0fx+5)/24 )
+      parameter (nnn1=(n0fx+2)*(n0fx+3)/2)
+      parameter (nnn2=n0fx*(n0fx+1)*(n0fx+5)/3)
+      parameter (nnn3=2*n0fx)
+      parameter (mvtx=nnn1+nnn2+nnn3)
+      parameter (mv2x = mvx*mvx)
+c
+c-----------------------------------------------------------------------
+c
+      parameter (nb2x  = nbx+nbx)
+      parameter (nhx   = nfx+ngx)
+      parameter (nhbx  = nhx+nhx)
+      parameter (nhbqx = nhbx*nhbx)
+      parameter (nfgx  = nfx*ngx)
+      parameter (nhhx  = nhx*nhx)
+      parameter (noox  = nox*nox)
+      parameter (lx    = n0fx*2)
+      parameter (jdim  = 3311)
+c

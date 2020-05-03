@@ -1,0 +1,16 @@
+n0f,n0b  =   12   20               ! number of oscillator shells(F,B)
+beta0    =    0.000                ! beta-deformation parameter of the basis
+gamma0   =   00.000                ! gamma-deformation parameter of the basis
+betai    =   +0.000                ! beta-deformation  of the start potential
+gammai   =   00.000                ! gamma-deformation of the start potential
+inin     =    1    1               ! initialization 
+init. gap=    1.00    1.00
+Kr 78                              ! nucleus under consideration
+c-------------------------------------------------------------------
+Force    =  DD-PC1                 ! Parameterset of the Lagrangian
+c-------------------------------------------------------------------
+icstr    =    1                    ! constraint none (0) quadratic (1)
+betac    =    0.000                ! constrained value of beta
+gammac   =   00.000                ! constrained value of gamma
+cqad     =    0.100                ! Spring constant for constraint
+c-------------------------------------------------------------------

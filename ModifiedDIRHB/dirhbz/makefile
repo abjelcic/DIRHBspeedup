@@ -4,10 +4,11 @@ FLAGS = -O3 -cpp -DNDEBUG -mcmodel=large -march=native
 
 DBGFLAGS = -Og -cpp -fcheck=all -DDEBUG -mcmodel=large
 
-BLAS = # /opt/OpenBLAS/lib/libopenblas.a \
-	     -lblas
+BLAS = -lblas
+    # /opt/OpenBLAS/lib/libopenblas.a \
+	     
 
-LINALG = $(BLAS) -lblas -llapack -lpthread
+LINALG = $(BLAS) -llapack -lpthread
 
 SRC =  dirhbz.f abjelcic.f
 

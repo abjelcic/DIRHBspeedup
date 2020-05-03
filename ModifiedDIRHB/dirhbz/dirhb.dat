@@ -1,4 +1,4 @@
-n0f      =   30  20                ! number of osc. shells (F and B)
+n0f      =   20  20                ! number of osc. shells (F and B)
 def-bas  =    4.000                ! deformation of the h.o. basis
 def-ini  =    4.000                ! deformation of the initial W.S. pot
 inin     =    1    1               ! initialization

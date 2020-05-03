@@ -280,14 +280,14 @@ c           call gamma(it)
 c
 c---------- diagonalization of the Dirac-Bogolibov equation
             write(6,'(a)',advance='no')
-     &       ' Pocinje dijagonalizacija ';call flush(6);
+     &       ' Eigensolve start...';call flush(6);
             call dirhbapprox(it,.false.)
 c
 c---------- calculation of densities in oscillator basis
             call denssh(it,.false.)
 c
          enddo   ! it
-         write(6,*)'Sad idu ostale rutine u iter() koje ja nisam pisao';
+         write(6,*)'Other routines from iter()...';
          call flush(6);
 
 
@@ -366,14 +366,14 @@ c           call gamma(it)
 c
 c---------- diagonalization of the Dirac-Bogolibov equation
             write(6,'(a)',advance='no')
-     &       'Pocinje dijagonalizacija ';call flush(6);
+     &       ' Eigensolve start...';call flush(6);
             call dirhb(it,.false.)
 c
 c---------- calculation of densities in oscillator basis
             call denssh(it,.false.)
 c
          enddo   ! it
-         write(6,*)'Sad idu ostale rutine u iter() koje ja nisam pisao';
+         write(6,*)'Other routines from iter()...';
          call flush(6);
 c
 c------- calculation of new densities in r-space
@@ -961,7 +961,7 @@ c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
 
 
 
-      write(6,'(a,i5)')'...gotovo! Broj lambda iteracija: ',lit;
+      write(6,'(a)')'...done!';
 
 
 
@@ -1411,7 +1411,7 @@ c---- end of lambda-loop
 c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
       endif
       ala(it) = al
-      write(6,'(a,i5)')'Broj lambda iteracija: ',lit;
+      write(6,'(a)')'...done!';
 
       if (lpr) then
       write(l6,*) ' ****** END DIRHB **********************************'

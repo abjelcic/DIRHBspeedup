@@ -1,0 +1,35 @@
+
+  ******************************************  
+  *           Fortran 77 Code              *  
+  *         Triaxial H.O. basis            *  
+  * Dirac-Hartree-Bogoliubov calculation   *  
+  *        with density-dependent          *  
+  * meson-exchange or point coupling force *  
+  *          and separable pairing         *  
+  * -------------------------------------- *  
+  *      Niksic, Paar, Vretenar, Ring      *  
+  *           2/ 2/2014/21:49:24           *
+  *       Kr  78  N =  42  Z =  36
+  *                DD-PC1    
+  ******************************************  
+  1.It. si=  0.000000  E/A=  0.000 R=  0.000 bet=0.0000 gam=  0.0 mix= 0.50
+  2.It. si= 73.959390  E/A= -8.429 R=  4.183 bet=-.0000 gam=  0.0 mix= 0.50
+  3.It. si= 39.710402  E/A= -8.491 R=  4.152 bet=0.0000 gam=  0.0 mix= 0.50
+  4.It. si= 30.367912  E/A= -8.523 R=  4.120 bet=-.0000 gam=  0.0 mix= 0.50
+  5.It. si= 20.701967  E/A= -8.533 R=  4.096 bet=0.0000 gam=  0.0 mix= 0.50
+  6.It. si=  3.449231  E/A= -8.536 R=  4.073 bet=0.0000 gam=  0.0 mix= 0.50
+  7.It. si=  1.657439  E/A= -8.537 R=  4.078 bet=-.0000 gam=  0.0 mix= 0.50
+  8.It. si=  0.065006  E/A= -8.537 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+  9.It. si=  0.045721  E/A= -8.537 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 10.It. si=  0.055583  E/A= -8.538 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 11.It. si=  0.009518  E/A= -8.539 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 12.It. si=  0.010540  E/A= -8.539 R=  4.080 bet=-.0000 gam=  0.0 mix= 0.50
+ 13.It. si=  0.001005  E/A= -8.539 R=  4.080 bet=-.0000 gam=  0.0 mix= 0.50
+ 14.It. si=  0.000107  E/A= -8.539 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 15.It. si=  0.000044  E/A= -8.539 R=  4.080 bet=-.0000 gam=  0.0 mix= 0.50
+ 16.It. si=  0.000054  E/A= -8.539 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 17.It. si=  0.000027  E/A= -8.539 R=  4.080 bet=-.0000 gam=  0.0 mix= 0.50
+ 18.It. si=  0.000005  E/A= -8.539 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+ 19.It. si=  0.000002  E/A= -8.539 R=  4.080 bet=0.0000 gam=  0.0 mix= 0.50
+Kr  78: Iteration converged after  19 steps   si =      0.0000001884
+ ****** END ITER ************************************
