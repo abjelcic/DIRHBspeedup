@@ -1,0 +1,13 @@
+n0f      =   30  20                ! number of osc. shells (F and B)
+def-bas  =    4.000                ! deformation of the h.o. basis
+def-ini  =    4.000                ! deformation of the initial W.S. pot
+inin     =    1    1               ! initialization
+Pu 240                             ! nucleus under consideration
+c-------------------------------------------------------------------
+Init.Gap =    1.000     1.000      ! Initial values for the Gaps
+c-------------------------------------------------------------------
+Force    =  DD-ME2                 ! Parameterset of the Lagrangian
+c-------------------------------------------------------------------
+icstr    =  1                      ! constraint calculation (0=no)
+betac    =  4.000                  ! expected beta value
+cquad    =  0.0001                 ! spring constant
