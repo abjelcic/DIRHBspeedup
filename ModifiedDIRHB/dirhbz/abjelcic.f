@@ -1,3 +1,12 @@
+! Ugly code ahead
+!
+! barf  [ba:rf]  2.  "He suggested using FORTRAN, and everybody barfed."
+!
+!  From The Shogakukan DICTIONARY OF NEW ENGLISH (Second edition) */
+
+
+
+
 c======================================================================c
 
       subroutine assert( statement , error_message )
