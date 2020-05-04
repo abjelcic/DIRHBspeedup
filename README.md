@@ -22,4 +22,6 @@ modern architectures, comparable to Intel MKL.
 
 Keep in mind that underlying OpenBLAS is by default automatically parallelized, and if the user wants to constrain the number of used threads to single thread, one should export the following variable in local environment: <code>OPENBLAS_NUM_THREADS=1</code>, which means, simply before running the program just type <code>export OPENBLAS_NUM_THREADS=1</code> in the console.
 
+Of course, you can use any other BLAS implementation (a slight modification of Makefile is needed) but I recommend OpenBLAS.
+
 For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code> and <code>OriginalDIRHB</code> by simply using the same input files <code>dirhb.dat</code> and <code>dirhb.par</code>.
