@@ -8,7 +8,7 @@ HFB matrix. HFB matrix shows many good properties and they should be utilized.
 
 The paper which proves correctness of the method is in progress.
 Also, a complex version of the method is in progress, since quantum chemists
-encounter similar matrices.
+encounter similar matrices (Fock matrix).
 
 
 
