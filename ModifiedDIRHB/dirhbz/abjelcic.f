@@ -67,7 +67,7 @@ c======================================================================c
       write(6,*)' 1.) The subroutine dirhb() is deleted from dirhbz.f';
       write(6,*)' 2.) The subroutine iter() is deleted from dirhbz.f ';
       write(6,*)' 3.) The function talmos2() is deleted from dirhbz.f';
-      write(6,*)' 4.) Some bugs in dirhbz.f code are fixed (sigrr)   ';
+      write(6,*)' 4.) Some bugs in dirhbz.f are fixed (sigrr, nkcan) ';
       write(6,*)' 5.) Ref. BLAS routines are deleted from dirhbz.f   ';
       write(6,*)' 6.) File abjelcic.f is added                       ';
       write(6,*)' 7.) In file dirhb.par, parameter N0FX was increased';
