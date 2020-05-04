@@ -51,29 +51,26 @@ c======================================================================c
       IMPLICIT NONE;
 
       write(6,*);
-      write(6,*)' Speedup by A.Bjelcic'                               ;
+      write(6,*)' Speedup by A.Bjelcic                               ';
       write(6,*);
       write(6,*)' This is the original DIRHB code downloaded directly';
-      write(6,*)' from CPC program library with few modifications:'   ;
+      write(6,*)' from CPC program library with few modifications:   ';
       write(6,*)' 1.) The subroutine dirhb() is deleted from dirhbz.f';
-      write(6,*)' 2.) The subroutine iter() is deleted from dirhbz.f' ;
+      write(6,*)' 2.) The subroutine iter() is deleted from dirhbz.f ';
       write(6,*)' 3.) The function talmos2() is deleted from dirhbz.f';
-      write(6,*)' 4.) File abjelcic.f was added'                      ;
+      write(6,*)' 4.) File abjelcic.f is added                       ';
       write(6,*)' 5.) In file dirhb.par, parameter N0FX was increased';
       write(6,*)' 6.) Number of retained Broyd.-vectors was increased';
-      write(6,*)' 7.) Makefile is slightly modified'                  ;
-      write(6,*)' 8.) OpenBLAS & LAPACK are required'                 ;
+      write(6,*)' 7.) Makefile is slightly modified                  ';
+      write(6,*)' 8.) OpenBLAS & LAPACK are required                 ';
+      write(6,*)' 9.) Ref. BLAS routines are deleted from dirhbz.f   ';
       write(6,*);
       write(6,*)' There are many more improvements that can be made, ';
       write(6,*)' only the critical one (HFB matrix eigensolver) has ';
       write(6,*)' been improved                                      ';
       write(6,*);
-      write(6,*)' All output files obtained by this code are the same';
-      write(6,*)' as one would get by running the original DIRHB code';
-      write(6,*)' (convince yourself if needed)                      ';
-      write(6,*);
-      write(6,*)' Nevertheless, if you notice something weird, '      ;
-      write(6,*)' please send me an email: abjelcic@phy.hr'           ;
+      write(6,*)' Nevertheless, if you notice something weird,       ';
+      write(6,*)' please send me an email: abjelcic@phy.hr           ';
       write(6,*);
       write(6,*);
 
@@ -727,7 +724,7 @@ c---------------------------------------------------------------------abjelcic-i
 
 
          !==============================================================!
-         != Quaternionic-method starts here ============================!
+         != HFB eigensolve method starts here ==========================!
          !==============================================================!
 
          ! hDhDlambda = ( h-lambdaI + 1jDelta )*( h-lambdaI - 1jDelta )
@@ -840,7 +837,7 @@ c---------------------------------------------------------------------abjelcic-i
          enddo
 
          !==============================================================!
-         != Quaternionic-method ends here ==============================!
+         != HFB eigensolve method ends here ============================!
          !==============================================================!
 
 
@@ -1185,7 +1182,7 @@ c---------------------------------------------------------------------abjelcic-i
          endif
 
          !==============================================================!
-         != Quaternionic-method starts here ============================!
+         != HFB eigensolve method starts here ==========================!
          !==============================================================!
 
          ! hDhDlambda = ( h-lambdaI + 1jDelta )*( h-lambdaI - 1jDelta )
@@ -1299,7 +1296,7 @@ c---------------------------------------------------------------------abjelcic-i
          enddo
 
          !==============================================================!
-         != Quaternionic-method ends here ==============================!
+         != HFB eigensolve method ends here ============================!
          !==============================================================!
 
 
