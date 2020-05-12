@@ -27,7 +27,8 @@ modern architectures, comparable to Intel MKL.
 
 Keep in mind that underlying OpenBLAS is by default automatically parallelized, and if the user wants to constrain the number of used threads to single thread, one should export the following variable in local environment: <code>OPENBLAS_NUM_THREADS=1</code>, which means, simply before running the program just type <code>export OPENBLAS_NUM_THREADS=1</code> in the command line.
 
-Of course, you can use any other BLAS implementation (in that case a slight modification of Makefile is needed) like [ATLAS](http://math-atlas.sourceforge.net/) or [Intel MKL](https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html), but I recommend OpenBLAS.
+Of course, you can use any other BLAS implementation (in that case a slight modification of Makefile is needed) like [ATLAS](http://math-atlas.sourceforge.net/) or [Intel MKL](https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html), but I recommend OpenBLAS since it is open source (unlike Intel MKL) and can be ready to use within
+minutes (unlike ATLAS).
 
 For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code> and <code>OriginalDIRHB</code> by simply using the same input files <code>dirhb.dat</code> and <code>dirhb.par</code>.
 
