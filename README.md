@@ -41,5 +41,5 @@ Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</cod
 Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
 
 Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained parameters <code>betac=0.600</code>, <code>gammac=10.000</code>, <code>cqad=0.010</code> and <code>n0f=18</code> shells. To reproduce the results of the
-original code, it took 8 seconds in preparation phase, 16.5 minutes in iteration phase, 3.1 minutes in transformation to canonical basis and 92.4 minutes in center of mass correction calculation. For comparison, iteration phase of the original code took approximately 35 hours.
+original code, it took 8 seconds in preparation phase, 16.5 minutes in iteration phase, 3.1 minutes in transformation to canonical basis and 92.4 minutes in center of mass correction calculation. For comparison, iteration phase of the original code took approximately 35 hours. For calculating PES, one can use simpler variant of center of mass correction. Since many applications require at least 20 shells, this code make it feasible to find PES in reasonable time.
 
