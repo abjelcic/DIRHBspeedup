@@ -6,8 +6,10 @@ This code is a small modification of the original [DIRHB code](https://www.scien
 Primary focus is on improving the routine for spectral decomposition of
 HFB matrix. HFB matrix shows many good properties and they should be utilized.
 There are still many more improvements that can be done, e.g. faster calculation
-of densities in coordinate space from density matrix in configuration space, or
-faster calculation of single particle Hamiltonian matrix h.
+of densities in coordinate space from density matrix in configuration space,
+faster calculation of single particle Hamiltonian matrix h and improving 
+routines for calculating transformation to canonical basis and center of
+mass correction.
 
 The paper which proves correctness of the method is in progress.
 Also, a complex version of the method is in progress, since quantum chemists
