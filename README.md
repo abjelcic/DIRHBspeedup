@@ -36,12 +36,4 @@ Folder <code>OriginalDIRHB</code> contains origianal DIRHB code for reference.
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to compile the origianl code, type <code>make original</code> followed by <code>./original</code>.
 
-For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code> and <code>OriginalDIRHB</code> by simply using the same input files <code>dirhb.dat</code> and <code>dirhb.par</code>.
 
-
-
-dirhbt kod, make original za originalan kod, moze ATLAS MKL...
-<<<<<<< HEAD
-
-=======
->>>>>>> 28baeec952fc31fd1d8fd4c8580c3bfd73d0de91
