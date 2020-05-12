@@ -30,6 +30,11 @@ Keep in mind that underlying OpenBLAS is by default automatically parallelized, 
 Of course, you can use any other BLAS implementation (in that case a slight modification of Makefile is needed) like [ATLAS](http://math-atlas.sourceforge.net/) or [Intel MKL](https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html), but I recommend OpenBLAS since it is open source (unlike Intel MKL) and can be ready to use within
 minutes (unlike ATLAS).
 
+
+## HOW TO USE
+Folder <code>OriginalDIRHB</code> contains origianal DIRHB code for reference.
+Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to compile the origianl code, type <code>make original</code> followed by <code>./original</code>.
+
 For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code> and <code>OriginalDIRHB</code> by simply using the same input files <code>dirhb.dat</code> and <code>dirhb.par</code>.
 
 
