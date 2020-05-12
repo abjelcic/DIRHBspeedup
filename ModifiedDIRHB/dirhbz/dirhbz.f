@@ -257,7 +257,7 @@ c
 c
       ! broyden iteration sizes
       parameter (nn = 2*MVTX+2*MVX+2+1)
-      parameter (mm = 15)
+      parameter (mm = 7)
 c
       common /baspar/ hom,hb0,b0
       common /iterat/ si,siold,epsi,xmix,xmix0,xmax,maxi,ii,inxt,iaut
@@ -524,7 +524,7 @@ c
       common /deldel/ de(NHHX,NB2X)
       common /eeecan/ eecan(KX,4),decan(KX,4),vvcan(KX,4),
      &                fgcan(NHX,KX,4),ibkcan(KX,4)
-      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(2)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
       common /mathco/ zero,one,two,half,third,pi
       common /fermi / ala(2),tz(2)
       common /optopt/ itx,icm,icou,ipc,inl,idd
@@ -818,7 +818,7 @@ c
       common /quaosc/ nt,nz(NTX),nr(NTX),ml(NTX),ms(NTX),np(NTX),tt(NTX)
       common /eeecan/ eecan(KX,4),decan(KX,4),vvcan(KX,4),
      &                fgcan(NHX,KX,4),ibkcan(KX,4)
-      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(2)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
       common /tapes / l6,lin,lou,lwin,lwou,lplo,laka,lvpp
 
 c
@@ -2082,7 +2082,194 @@ c
 c-end-DINOUT
       end
 
+c======================================================================c
 
+      subroutine dirhb(it,lpr)
+
+c======================================================================c
+c
+c     solves the RHB-Equation
+c     IT    = 1 for neutrons
+c     IT    = 2 for protons
+c
+c----------------------------------------------------------------------c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+c
+      logical lpr,lprl
+c
+      character*1 bbb
+      character*8 tbb(NHBX)
+      character tp*1,tis*1,tit*8,tl*1                           ! textex
+      character tb*6                                            ! blokap
+      character tt*8                                            ! quaosc
+      character nucnam*2                                        ! nucnuc
+c
+      dimension hb(NHBQX),e(NHBX),ez(NHBX)
+c
+      common /blodir/ ka(NBX,4),kd(NBX,4)
+      common /blokap/ nb,kb(NBX),mb(NBX),tb(NBX)
+      common /bloosc/ ia(NBX,2),id(NBX,2)
+      common /deldel/ de(NHHX,NB2X)
+      common /fermi / ala(2),tz(2)
+      common /gamgam/ hh(NHHX,NB2X)
+      common /iterat/ si,siold,epsi,xmix,xmix0,xmax,maxi,ii,inxt,iaut
+      common /mathco/ zero,one,two,half,third,pi
+      common /nucnuc/ amas,npr(3),nucnam
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /quaosc/ nt,nnn(NTX,5),tt(NTX)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo,laka,lvpp
+      common /textex/ tp(2),tis(2),tit(2),tl(0:30)
+      common /waveuv/ fguv(NHBX,KX,4),equ(KX,4)
+c
+      data maxl/200/,epsl/1.d-8/,bbb/'-'/,lprl/.false./
+c
+      if (lpr) then
+      write(l6,*) ' ****** BEGIN DIRHB ********************************'
+      endif
+
+      dl    = 100.d0
+      xh    = ala(it) + dl
+      xl    = ala(it) - dl
+      al    = ala(it)
+c
+c======================================================================c
+      do lit = 1,maxl         ! loop over lambda-iteration
+c======================================================================c
+         snold = sn
+         sn  = zero
+         klp = 0
+         kla = 0
+c======================================================================c
+      do ib = 1,nb            ! loop over differnt blocks
+c======================================================================c
+         mul  = mb(ib)
+         nf   = id(ib,1)
+         ng   = id(ib,2)
+         nh   = nf + ng
+         nhb  = nh + nh
+         m    = ib + (it-1)*NBX
+c
+c------- calculation of the RHB-Matrix:
+         do n2 = 1,nh
+         do n1 = n2,nh
+            hb(   n1+(   n2-1)*nhb) =  hh(n1+(n2-1)*nh,m)
+            hb(nh+n1+(nh+n2-1)*nhb) = -hh(n1+(n2-1)*nh,m)
+            hb(nh+n1+(   n2-1)*nhb) =  de(n1+(n2-1)*nh,m)
+            hb(nh+n2+(   n1-1)*nhb) =  de(n2+(n1-1)*nh,m)
+         enddo
+            hb(   n2+(   n2-1)*nhb) =  hb(n2+(n2-1)*nhb) - al
+            hb(nh+n2+(nh+n2-1)*nhb) = -hb(n2+(n2-1)*nhb)
+         enddo
+c
+c------- Diagonalization:
+         if (lpr) then
+            i0f = ia(ib,1)
+            do n = 1,nh
+               tbb(n)    = tt(i0f+n)
+               tbb(nh+n) = tbb(n)
+            enddo
+            write(l6,'(/i3,a,1x,a)') ib,'. Block ',tb(ib)
+            nx = nhb
+            nx = 5
+            call aprint(2,3,6,nhb,nx,nx,hb,tbb,tbb,'HB')
+            read*
+         endif
+         call sdiag(nhb,nhb,hb,e,hb,ez,+1)
+c
+c------- store eigenvalues and wave functions
+c------- particles
+         ka(ib,it) = klp
+         do k = 1,nf
+	    klp = klp + 1
+            equ(klp,it) = e(nh+k)
+            do n = 1,nhb
+               fguv(n,klp,it) = hb(n+(nh+k-1)*nhb)
+            enddo
+            v2 = zero
+            do n = 1,nh
+               v2 = v2 + fguv(nh+n,klp,it)**2
+            enddo
+            if (v2.lt.zero) v2 = zero
+            if (v2.gt.one)  v2 = one
+            sn = sn + v2*mul
+         enddo
+	 kd(ib,it) = klp - ka(ib,it)
+c
+c------- anti-particles
+	 ka(ib,it+2) = kla
+         do k = 1,ng
+	    kla = kla + 1
+            equ(kla,it+2) = e(ng-k+1)
+            do n = 1,nhb
+               fguv(n,kla,it+2) = hb(n+(ng-k)*nhb)
+            enddo
+            v2 = zero
+            do n = 1,nh                   ! no-sea approximation
+               v2 = v2 + fguv(nh+n,kla,it+2)**2
+            enddo                         ! no-sea approximation
+            sn = sn + v2*mul
+         enddo
+	 kd(ib,it+2) = kla - ka(ib,it+2)
+c
+c======================================================================c
+      enddo   ! ib
+c======================================================================c
+      if (lit.gt.1) dd = (sn - snold)/(al - alold)
+c------- calculation of a new lambda-value
+      alold = al
+      dn    = sn - tz(it)
+      if (dn.lt.zero) then
+          xl = al
+      else
+          xh = al
+      endif
+      if (lit.eq.1) then
+         if(dabs(dn).le.0.1d0) then
+            al = al - dn
+         else
+             al = al - 0.1d0*sign(one,dn)
+         endif
+      else
+c           secant method
+         if (dd.eq.zero) dd = 1.d-20
+         al    = al - dn/dd
+         if (al.lt.xl.or.al.gt.xh) then
+c              bisection
+            al = half*(xl+xh)
+            bbb = 'B'
+         endif
+      endif
+      if (abs(al-alold).lt.epsl) goto 30
+c
+      if (lprl.or.lit.gt.10) then
+          write(l6,113) lit,'. L-Iteration: ',bbb,alold,dn,al
+          write(6,113)  lit,'. L-Iteration: ',bbb,alold,dn,al
+          bbb = ' '
+      endif
+c
+c---- end of lambda-loop
+      enddo
+      write(l6,'(a,i4,a)')
+     &     ' Lambda-Iteration interupted after',lit-1,' steps'
+      stop
+   30 if (lprl) then
+         write(l6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
+c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
+      endif
+      ala(it) = al
+
+      if (lpr) then
+      write(l6,*) ' ****** END DIRHB **********************************'
+      endif
+c
+  101 format(i4,a,i4,3f13.8)
+  113 format(i4,a,a1,3f13.8)
+c
+      return
+C-end-DIRHB
+      end
 
 C=======================================================================
 
@@ -5040,88 +5227,6 @@ c
 c-end-INOUT
       end
 
-
-c======================================================================c
-c
-c     PROGRAM DIRHB-axial
-c
-c======================================================================c
-c     Relativistic Hartree-Bogoliubov theory in a axially symmetric basis
-c     Main part of the code
-c----------------------------------------------------------------------c
-c
-c-------------------------------------
-      implicit real*8 (a-h,o-z)
-      common /mathco/ zero,one,two,half,third,pi
-
-c-------------------------------------
-c
-c
-c---- sets data
-      call default(.false.)
-c
-c---- reads in data
-      call reader(.true.)
-      call print_header();
-c
-c---- force-parameters
-      call forces(.true.)
-c
-c---- Gauss-Hermite mesh points
-      call gaush(two,.false.)
-      call gausl(.false.)
-c
-c---- oscillator basis for single particle states
-      call base(.false.)
-c
-c---- preparations
-      call prep(.false.)
-c
-c---- wavefunctions at Gauss-Meshpoints
-      call gaupol(.false.)
-c
-c---- initialization of the potentials
-      call inout(1,.false.)
-c
-c---- initialization of the pairing field
-      call dinout(1,.false.)
-      call start(.false.)
-c
-c---- single-particle matix elements
-      call singf(.false.)
-c
-c---- preparation of pairing matrix elements
-      write(6,*)'Calculation of two dimensional Talmi Moshinsky';
-      write(6,*)'brackets can take some time, hang on...';
-      call singd(.false.)
-c
-c---- coulomb and meson propagators
-      call greecou(.false.)
-      call greemes(.false.)
-c
-c---- iteration
-      call tictoc('tic');
-      call iter(.true.)
-      call tictoc('toc');
-
-c
-c---- transformation to the canonical basis
-      call canon(.true.)
-c
-c---- center of mass correction
-      call centmas(.false.)
-c
-c---- results
-      call resu(.true.)
-      call plot(.false.)
-c
-c---- punching of potentials to tape  dis.wel
-      call inout(2,.false.)
-      call dinout(2,.false.)
-
-      stop ' FINAL STOP OF DIRHBZ'
-c-end-DIZ
-      end
 
 c=====================================================================c
 

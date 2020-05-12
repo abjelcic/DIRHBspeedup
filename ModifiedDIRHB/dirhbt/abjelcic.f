@@ -463,9 +463,10 @@ c======================================================================c
       write(6,*)'* 1.) The subroutine iter is deleted from dirhbt.f  *';
       write(6,*)'* 2.) Main is deleted from dirhbt.f                 *';
       write(6,*)'* 3.) Ref. BLAS routines are deleted from dirhbt.f  *';
-      write(6,*)'* 4.) File abjelcic.f is added                      *';
-      write(6,*)'* 5.) Makefile is slightly modified                 *';
-      write(6,*)'* 6.) (Open)BLAS & LAPACK are required              *';
+      write(6,*)'* 4.) Some minor bugs in dirhbt.f are fixed         *';
+      write(6,*)'* 5.) File abjelcic.f is added                      *';
+      write(6,*)'* 6.) Makefile is slightly modified                 *';
+      write(6,*)'* 7.) (Open)BLAS & LAPACK are required              *';
       write(6,*)'*                                                   *';
       write(6,*)'* If you notice something weird: abjelcic@phy.hr,   *';
       write(6,*)'* or more preferably, post an issue on GitHub       *';

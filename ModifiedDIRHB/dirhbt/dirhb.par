@@ -13,7 +13,7 @@ c---- maximal number of (k,parity)-blocks
       parameter (    nbx =        2 )
 c
 c---- maximal oscillator quantum number for large components
-      parameter (   n0fx = 16 )
+      parameter (   n0fx = 18 )
       parameter (   kmaxp= n0fx/2  )
       parameter (   n0fp = (kmaxp+1)*(kmaxp+2)*(4*kmaxp+3)/6)
 

@@ -1,11 +1,459 @@
-! Ugly code ahead
-!
 ! barf  [ba:rf]  2.  "He suggested using FORTRAN, and everybody barfed."
 !
 !  From The Shogakukan DICTIONARY OF NEW ENGLISH (Second edition)
 
+c======================================================================c
+c
+      PROGRAM DIRHBZ
+c
+c======================================================================c
+c     Relativistic Hartree-Bogoliubov theory in a axially symmetric basis
+c     Main part of the code
+c----------------------------------------------------------------------c
+c
+c-------------------------------------
+      implicit real*8 (a-h,o-z)
+      common /mathco/ zero,one,two,half,third,pi
+
+      call tictoc('tic',time);
+c-------------------------------------
+c
+c
+c---- sets data
+      call default(.false.)
+c
+c---- reads in data
+      call reader(.true.)
+#ifndef ORIGINAL
+      call print_header();
+#endif
+c
+c---- force-parameters
+      call forces(.true.)
+c
+c---- Gauss-Hermite mesh points
+      call gaush(two,.false.)
+      call gausl(.false.)
+c
+c---- oscillator basis for single particle states
+      call base(.false.)
+c
+c---- preparations
+      call prep(.false.)
+c
+c---- wavefunctions at Gauss-Meshpoints
+      call gaupol(.false.)
+c
+c---- initialization of the potentials
+      call inout(1,.false.)
+c
+c---- initialization of the pairing field
+      call dinout(1,.false.)
+      call start(.false.)
+c
+c---- single-particle matix elements
+      call singf(.false.)
+c
+c---- preparation of pairing matrix elements
+#ifndef ORIGINAL
+      write(6,*)'Calculation of two dimensional Talmi Moshinsky';
+      write(6,*)'brackets can take some time, hang on...';
+      write(6,*);
+#endif
+      call singd(.false.)
+c
+c---- coulomb and meson propagators
+      call greecou(.false.)
+      call greemes(.false.)
+#ifndef ORIGINAL
+      call tictoc('toc',time);
+      write(6,'(a,f10.3,a)')'  Elapsed time(initialization): ',time,'s';
+      write(6,*);
+#endif
+      call tictoc('tic',time);
+c---- iteration
+      call iter(.true.)
+#ifndef ORIGINAL
+      write(6,*);
+      call tictoc('toc',time);
+      write(6,'(a,f10.3,a)')'  Elapsed time(iterations    ): ',time,'s';
+#endif
+c
+c---- transformation to the canonical basis
+      call tictoc('tic',time);
+      call canon(.true.)
+#ifndef ORIGINAL
+      call tictoc('toc',time);
+      write(6,'(a,f10.3,a)')'  Elapsed time(canon transf. ): ',time,'s';
+#endif
+c
+c---- center of mass correction
+      call tictoc('tic',time);
+      call centmas(.false.)
+#ifndef ORIGINAL
+      call tictoc('toc',time);
+      write(6,'(a,f10.3,a)')'  Elapsed time(centmass corr.): ',time,'s';
+#endif
+c
+c---- results
+      call resu(.true.)
+      call plot(.false.)
+c
+c---- punching of potentials to tape  dis.wel
+      call inout(2,.false.)
+      call dinout(2,.false.)
+
+c-end-DIZ
+      end
 
 
+#ifdef ORIGINAL
+c=====================================================================c
+
+      subroutine iter(lpr)
+
+c======================================================================c
+c
+c     main iteration for the spherical Dirac program
+c
+c----------------------------------------------------------------------c
+      implicit real*8 (a-h,o-z)
+c
+      logical lpr,lprx
+      character*2 nucnam
+      character*14 text3
+      character*27 text1,text2
+c
+      common /erwar / ea,rms,betg,gamg
+      common /iterat/ si,siold,epsi,xmix,xmix0,xmax,maxi,ii,inxt,iaut
+      common /mathco/ zero,one,two,half,third,pi
+      common /nucnuc/ amas,nneu,npro,nmas,nucnam
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /pair  / del(2),spk(2),spk0(2)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo,laka,lvpp
+c
+c
+      data spk_min/0.1/
+c
+c
+      text1 = ': Iteration interrupted after '
+      text2 = ': Iteration converged after '
+      text3 = ' steps   si = '
+c
+c      CALL zeit(1,'ITER_____',6,.false.)
+c
+      write(l6,*) '****** BEGIN ITER **********************************'
+
+      ii=0
+      do it=1,2
+         call gamma(it)
+      enddo
+      call broyden(.false.)
+c
+      do ite = 1,maxi
+         ii = ite
+         write(l6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+         write( 6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+c
+c
+c
+c------- loop over neutrons and protons
+         do it = 1,2
+c
+c---------- calculation of the mean field Gamma
+c           call gamma(it)
+c
+c---------- diagonalization of the Dirac-Bogolibov equation
+            call dirhb(it,.false.)
+c
+c---------- calculation of densities in oscillator basis
+            call denssh(it,.false.)
+c
+         enddo   ! it
+c
+c------- calculation of new densities in r-space
+         call densit(.false.)
+c
+c------- new coupling constants
+         call gdd(.false.)
+c
+c------- calculation of new fields
+         call field(.false.)
+c
+c------- calculation of the Coulomb potential
+         call coulom(.false.)
+c
+c------- calculation of expectation values
+         call expect(.false.)
+c
+c------- potentials in r-space
+         call cstrpot(.false.)
+         call poten(.false.)
+c
+c------- pairing field
+         do it = 1,2
+            call gamma(it)
+            call delta(it,.false.)
+         enddo
+
+         call broyden(.false.)
+c
+c------- check for convergence
+         if (ii.gt.2) then
+            ic = itestc()
+            if (ic.eq.1) goto 20
+            if (ic.eq.2) goto 30
+         endif
+c
+      enddo   ! ite
+   20 write(6,100) nucnam,nmas,text1,ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
+      goto 40
+c
+   30 write(6,101) nucnam,nmas,text2,ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ii,text3,si
+c
+   40 write(l6,*) '****** END ITER ************************************'
+      write( 6,*) '****** END ITER ************************************'
+c     read*
+c
+c      CALL zeit(2,'ITER_____',6,.false.)
+c
+  100 format(1x,68(1h*),/,2x,a2,i4,a27,i4,a14,f17.10,/,1x,68(1h*))
+  101 format(1x,a2,i4,a27,i4,a14,f17.10)
+  102 format(i3,a,f10.6,3(a,f7.3),a,f5.2)
+c
+      return
+c-end-ITER
+      end
+#else
+c=====================================================================c
+
+      subroutine iter(lpr)
+
+c======================================================================c
+c
+c     main iteration for the spherical Dirac program
+c
+c----------------------------------------------------------------------c
+      implicit real*8 (a-h,o-z)
+c
+      logical lpr,lprx
+      character*2 nucnam
+      character*14 text3
+      character*27 text1,text2
+c
+      common /erwar / ea,rms,betg,gamg
+      common /iterat/ si,siold,epsi,xmix,xmix0,xmax,maxi,ii,inxt,iaut
+      common /mathco/ zero,one,two,half,third,pi
+      common /nucnuc/ amas,nneu,npro,nmas,nucnam
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /pair  / del(2),spk(2),spk0(2)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo,laka,lvpp
+c
+c
+      data spk_min/0.1/
+c
+c
+      text1 = ': Iteration interrupted after '
+      text2 = ': Iteration converged after '
+      text3 = ' steps   si = '
+c
+c      CALL zeit(1,'ITER_____',6,.false.)
+c
+      write(l6,*) '****** BEGIN ITER **********************************'
+
+
+      ii=0
+      do it=1,2
+         call gamma(it)
+      enddo
+      call broyden(.false.)
+c
+
+      epsi = +5.0d-3;
+      si   = +1.d+20;
+      do ite = 1,maxi
+         ii = ite
+         write(l6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+         write( 6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+c
+c
+c
+c------- loop over neutrons and protons
+         do it = 1,2
+c
+c---------- calculation of the mean field Gamma
+c           call gamma(it)
+c
+c---------- diagonalization of the Dirac-Bogolibov equation
+            call dirhb_abjelcic(it,.false.)
+c
+c---------- calculation of densities in oscillator basis
+            call denssh(it,.false.)
+c
+         enddo   ! it
+
+
+c------- calculation of new densities in r-space
+         call densit(.false.)
+c
+c------- new coupling constants
+         call gdd(.false.)
+c
+c------- calculation of new fields
+         call field(.false.)
+c
+c------- calculation of the Coulomb potential
+         call coulom(.false.)
+c
+c------- calculation of expectation values
+         call expect(.false.)
+c
+c------- potentials in r-space
+         call cstrpot(.false.)
+         call poten(.false.)
+c
+c------- pairing field
+         do it = 1,2
+            call gamma(it)
+            call delta(it,.false.)
+         enddo
+
+         call broyden(.false.)
+c
+c------- check for convergence
+         if (ii.gt.2) then
+            ic = itestc()
+            if (ic.eq.1) goto 20
+            if (ic.eq.2) goto 30
+         endif
+c
+      enddo   ! ite
+
+
+   20 write(6,100) nucnam,nmas,text1,ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
+      goto 40
+c
+   30 write(6,*)'First stage completed';
+      ite1 = ite;
+
+
+
+
+
+
+      ii=0
+      do it=1,2
+         call gamma(it)
+      enddo
+      call broyden(.false.)
+c
+
+      epsi = 1.d-6;
+      si   = 1.d+20;
+      do ite = 1,maxi
+         ii = ite
+         write(l6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+         write( 6,102) ii,'.It. si = ',si,'  E/A = ',ea,
+     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
+c
+c
+c
+c------- loop over neutrons and protons
+         do it = 1,2
+c
+c---------- calculation of the mean field Gamma
+c           call gamma(it)
+c
+c---------- diagonalization of the Dirac-Bogolibov equation
+            call dirhbfull_abjelcic(it,.false.)
+c
+c---------- calculation of densities in oscillator basis
+            call denssh(it,.false.)
+c
+         enddo   ! it
+c
+c------- calculation of new densities in r-space
+         call densit(.false.)
+c
+c------- new coupling constants
+         call gdd(.false.)
+c
+c------- calculation of new fields
+         call field(.false.)
+c
+c------- calculation of the Coulomb potential
+         call coulom(.false.)
+c
+c------- calculation of expectation values
+         call expect(.false.)
+c
+c------- potentials in r-space
+         call cstrpot(.false.)
+         call poten(.false.)
+c
+c------- pairing field
+         do it = 1,2
+            call gamma(it)
+            call delta(it,.false.)
+         enddo
+
+         call broyden(.false.)
+c
+c------- check for convergence
+         if (ii.gt.2) then
+            ic = itestc()
+            if (ic.eq.1) goto 21
+            if (ic.eq.2) goto 31
+         endif
+c
+      enddo   ! ite
+
+
+   21 write(6,100) nucnam,nmas,text1,ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
+      goto 40
+c
+   31 write(6,101) nucnam,nmas,text2,ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ii,text3,si
+c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   40 write(l6,*) '****** END ITER ************************************'
+      write( 6,*) '****** END ITER ************************************'
+c     read*
+c
+c      CALL zeit(2,'ITER_____',6,.false.)
+c
+  100 format(1x,68(1h*),/,2x,a2,i4,a27,i4,a14,f17.10,/,1x,68(1h*))
+  101 format(1x,a2,i4,a27,i4,a14,f17.10)
+  102 format(i3,a,f10.6,3(a,f7.3),a,f5.2)
+c
+      return
+c-end-ITER
+      end
+#endif
 
 c======================================================================c
 
@@ -27,14 +475,14 @@ c======================================================================c
 
 c======================================================================c
 
-      subroutine tictoc( tic_or_toc )
+      subroutine tictoc( tic_or_toc , time )
 
 c======================================================================c
 
       IMPLICIT NONE;
       CHARACTER( LEN = * ) tic_or_toc;
-      INTEGER it1, it2, iclock_rate, iclock_max;
       DOUBLE PRECISION time;
+      INTEGER it1, it2, iclock_rate, iclock_max;
 
       SAVE it1;
 
@@ -44,12 +492,10 @@ c======================================================================c
       if( tic_or_toc .eq. 'toc' ) then
           call system_clock( it2, iclock_rate, iclock_max );
           time = DBLE(it2-it1) / DBLE(iclock_rate);
-          write(6,'(a,f10.4,a)')'Elapsed time: ', time, 's; ';
       endif
 
       return;
       end;
-
 
 c======================================================================c
 
@@ -60,34 +506,168 @@ c======================================================================c
       IMPLICIT NONE;
 
       write(6,*);
-      write(6,*)' Speedup by A.Bjelcic                               ';
-      write(6,*);
-      write(6,*)' This is the original DIRHB code downloaded directly';
-      write(6,*)' from CPC program library with few modifications:   ';
-      write(6,*)' 1.) The subroutine dirhb() is deleted from dirhbz.f';
-      write(6,*)' 2.) The subroutine iter() is deleted from dirhbz.f ';
-      write(6,*)' 3.) The function talmos2() is deleted from dirhbz.f';
-      write(6,*)' 4.) Some bugs in dirhbz.f are fixed (sigrr, nkcan) ';
-      write(6,*)' 5.) Ref. BLAS routines are deleted from dirhbz.f   ';
-      write(6,*)' 6.) File abjelcic.f is added                       ';
-      write(6,*)' 7.) In file dirhb.par, parameter N0FX was increased';
-      write(6,*)' 8.) Number of retained Broyd.-vectors was increased';
-      write(6,*)' 9.) Makefile is slightly modified                  ';
-      write(6,*)' 10.) OpenBLAS & LAPACK are required                ';
-      write(6,*);
-      write(6,*)' There are many more improvements that can be made, ';
-      write(6,*)' only the critical one (HFB matrix eigensolver) has ';
-      write(6,*)' been addressed                                     ';
-      write(6,*);
-      write(6,*)' Nevertheless, if you notice something weird,       ';
-      write(6,*)' please send me an email: abjelcic@phy.hr           ';
-      write(6,*);
+      write(6,*)'*****************************************************';
+      write(6,*)'* Speedup by A.Bjelcic                              *';
+      write(6,*)'*                                                   *';
+      write(6,*)'* This is the original DIRHBZ code (2014) directly  *';
+      write(6,*)'* from CPC program library with few modifications:  *';
+      write(6,*)'* 1.) The subroutine iter is deleted from dirhbz.f  *';
+      write(6,*)'* 2.) The function talmos2 is deleted from dirhbz.f *';
+      write(6,*)'* 3.) Main is deleted from dirhbz.f                 *';
+      write(6,*)'* 4.) Ref. BLAS routines are deleted from dirhbz.f  *';
+      write(6,*)'* 5.) Some minor bugs in dirhbz.f are fixed         *';
+      write(6,*)'* 6.) File abjelcic.f is added                      *';
+      write(6,*)'* 7.) Makefile is slightly modified                 *';
+      write(6,*)'* 8.) (Open)BLAS & LAPACK are required              *';
+      write(6,*)'*                                                   *';
+      write(6,*)'* If you notice something weird: abjelcic@phy.hr,   *';
+      write(6,*)'* or more preferably, post an issue on GitHub       *';
+      write(6,*)'* repository: github.com/abjelcic/DIRHBspeedup      *';
+      write(6,*)'*                                                   *';
+      write(6,*)'*****************************************************';
       write(6,*);
 
       return;
       end;
 
+#ifdef ORIGINAL
+c=======================================================================c
+c
+      real*8 function talmos2(im1,in1,in2,im3,in3,in4)
+c
+c=======================================================================c
+c
+c	2d-moshinsky bracket:
+c
+c	<n1 m1, n2 -m1 | n3 m3, n4 -m3>
+c
+c	radial quantum number start from zero: n=0,1,2,....
+c	orbital angular momentum m1=-m2>0,m3=-m4>0
+c
+c-----------------------------------------------------------------------c
+C
+c     iv(n)  =  (-1)**n
+c     fak(n) =  n!
+c     fi(n)  =  1/n!
+c     wf(n)  =  sqrt(n!)
+c     wfi(n) =  1/sqrt(n!)
+C
+C-----------------------------------------------------------------------c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+c
+      common /gfviv / iv(-IGFV:IGFV)
+      common /gfvfak/ fak(0:IGFV)
+      common /gfvfi / fi(0:IGFV)
+      common /gfvwf / wf(0:IGFV)
+      common /gfvwfi/ wfi(0:IGFV)
+      common /mathco/ zero,one,two,half,third,pi
+c
+      im2 = -im1
+      im4 = -im3
+c
+      talmos2 = zero
+c
+      nn12 = 2*in1+iabs(im1)+2*in2+iabs(im2)
+      nn34 = 2*in3+iabs(im3)+2*in4+iabs(im4)
+      if (im1.lt.0)     stop 'in TALMOS2: m1 < 0'
+      if (im3.lt.0)     stop 'in TALMOS2: m3 < 0'
+      if (nn12.ne.nn34) return
+c
+      s34 = zero
+c
+      if (im1.lt.im2) then
+         n1 = in2
+         n2 = in1
+         m1 = im2
+         m2 = im1
+      else
+         n1 = in1
+         n2 = in2
+	 m1 = im1
+         m2 = im2
+      endif
+      n3 = in3
+      n4 = in4
+      m3 = im3
+      m4 = im4
+      nn1 = 2*n1 + abs(m1)
+      nn2 = 2*n2 + abs(m2)
+      nn3 = 2*n3 + abs(m3)
+      nn4 = 2*n4 + abs(m4)
+      if (m3.gt.m4) then
+         if (n1+n2.ne.n3+n4+m2-m4) return
+      else
+         if (n1+n2.ne.n3+n4+m2-m3) return
+      endif
+      prout = iv(n3+n4-n1-n2)/sqrt(two**(nn3+nn4))*
+     &	wf(n1)*wf(n1+abs(m1))*
+     &	wf(n2)*wf(n2+abs(m2))*
+     &	wfi(n3)*wfi(n3+abs(m3))*
+     &	wfi(n4)*wfi(n4+abs(m4))
+c
+      sn3 = zero
+      sn4 = zero
+      sm3 = zero
+      sm4 = zero
+c
+      do i3 = 0,n3
+      do j3 = 0,n3
+      do k3 = 0,n3
+c
+         l3 = n3 - i3 - j3 - k3
+c
+      do i4 = 0,n4
+      do j4 = 0,n4
+      do 20 k4 = 0,n4
+c
+         l4 = n4 - i4 - j4 - k4
+c
+         if (l3.lt.0.or.l4.lt.0) goto 20
+c
+         do it3 = 0,abs(m3)
+         do 10 it4 = 0,abs(m4)
+c
+         if (m3.gt.m4) then
+            if (i3+i4+j3+j4+it3.ne.n2) goto 10
+            if (j3+j4.ne.m2+k3+k4-it3+it4) goto 10
+            if (l3+l4.ne.n3+n4-n2-k3-k4+it3) goto 10
+            sn3 = fak(n3)*fi(l3)*fi(i3)*fi(j3)*fi(k3)
+            sn4 = iv(j4+k4)*fak(n4)*fi(l4)*fi(i4)*fi(j4)*fi(k4)
+            sm3 = fak(abs(m3))*fi(it3)*fi(abs(m3)-it3)
+            sm4 = iv(it4)*fak(abs(m4))*fi(it4)*fi(abs(m4)-it4)
+            s34 = s34 + sn3*sn4*sm3*sm4
+c
+         else
+            if (i3+i4+j3+j4+it4.ne.n2) goto 10
+            if (j3+j4.ne.m2+k3+k4+it3-it4) goto 10
+            if (l3+l4.ne.n3+n4-n2-k3-k4+it4) goto 10
+            sn3 = fak(n3)*fi(l3)*fi(i3)*fi(j3)*fi(k3)
+            sn4 = iv(j4+k4)*fak(n4)*fi(l4)*fi(i4)*fi(j4)*fi(k4)
+            sm3 = fak(abs(m3))*fi(it3)*fi(abs(m3)-it3)
+            sm4 = iv(it4)*fak(abs(m4))*fi(it4)*fi(abs(m4)-it4)
+            s34 = s34 + sn3*sn4*sm3*sm4
+c
+         endif ! m3,m4
 
+   10 continue   ! it4 modified by tamara
+      enddo   ! it3
+c
+   20 continue   ! k2
+      enddo   ! j2
+      enddo   ! i2
+c
+      enddo   ! k1
+      enddo   ! j1
+      enddo   ! i1
+c
+      talmos2 = s34*prout
+c
+      return
+c-end-TALMOS2
+      end
+#else
 c=======================================================================c
 c
       real*8 function talmos2(im1,in1,in2,im3,in3,in4)
@@ -224,241 +804,7 @@ c
       return
 c-end-TALMOS2
       end
-
-
-c=====================================================================c
-
-      subroutine iter(lpr)
-
-c======================================================================c
-c
-c     main iteration for the spherical Dirac program
-c
-c----------------------------------------------------------------------c
-      implicit real*8 (a-h,o-z)
-c
-      logical lpr,lprx
-      character*2 nucnam
-      character*14 text3
-      character*27 text1,text2
-c
-      common /erwar / ea,rms,betg,gamg
-      common /iterat/ si,siold,epsi,xmix,xmix0,xmax,maxi,ii,inxt,iaut
-      common /mathco/ zero,one,two,half,third,pi
-      common /nucnuc/ amas,nneu,npro,nmas,nucnam
-      common /optopt/ itx,icm,icou,ipc,inl,idd
-      common /pair  / del(2),spk(2),spk0(2)
-      common /tapes / l6,lin,lou,lwin,lwou,lplo,laka,lvpp
-c
-c
-      data spk_min/0.1/
-c
-c
-      text1 = ': Iteration interrupted after '
-      text2 = ': Iteration converged after '
-      text3 = ' steps   si = '
-c
-c      CALL zeit(1,'ITER_____',6,.false.)
-c
-      write(l6,*) '****** BEGIN ITER **********************************'
-
-
-      epsi = +5.0d-3;
-      ii=0
-      do it=1,2
-         call gamma(it)
-      enddo
-      call broyden(.false.)
-c
-      do ite = 1,maxi
-         ii = ite
-         write(l6,102) ii,'.It. si = ',si,'  E/A = ',ea,
-     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
-         write( 6,102) ii,'.It. si = ',si,'  E/A = ',ea,
-     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
-c
-c
-c
-c------- loop over neutrons and protons
-         do it = 1,2
-c
-c---------- calculation of the mean field Gamma
-c           call gamma(it)
-c
-c---------- diagonalization of the Dirac-Bogolibov equation
-            write(6,'(a)',advance='no')
-     &       ' Eigensolve start...';call flush(6);
-            call dirhbapprox(it,.false.)
-c
-c---------- calculation of densities in oscillator basis
-            call denssh(it,.false.)
-c
-         enddo   ! it
-         write(6,*)'Other routines from iter()...';
-         call flush(6);
-
-
-c------- calculation of new densities in r-space
-         call densit(.false.)
-c
-c------- new coupling constants
-         call gdd(.false.)
-c
-c------- calculation of new fields
-         call field(.false.)
-c
-c------- calculation of the Coulomb potential
-         call coulom(.false.)
-c
-c------- calculation of expectation values
-         call expect(.false.)
-c
-c------- potentials in r-space
-         call cstrpot(.false.)
-         call poten(.false.)
-c
-c------- pairing field
-         do it = 1,2
-            call gamma(it)
-            call delta(it,.false.)
-         enddo
-
-         call broyden(.false.)
-c
-c------- check for convergence
-         if (ii.gt.2) then
-            ic = itestc()
-            if (ic.eq.1) goto 20
-            if (ic.eq.2) goto 30
-         endif
-c
-      enddo   ! ite
-
-
-   20 write(6,100) nucnam,nmas,text1,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
-      goto 40
-c
-   30 write(6,101) nucnam,nmas,text2,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ii,text3,si
-c
-
-
-
-
-
-
-
-      epsi = 1.d-6;
-      ii=0
-      do it=1,2
-         call gamma(it)
-      enddo
-      call broyden(.false.)
-c
-      do ite = 1,maxi
-         ii = ite
-         write(l6,102) ii,'.It. si = ',si,'  E/A = ',ea,
-     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
-         write( 6,102) ii,'.It. si = ',si,'  E/A = ',ea,
-     &                    ' R = ',rms,' b = ',betg,'  mix =',xmix
-c
-c
-c
-c------- loop over neutrons and protons
-         do it = 1,2
-c
-c---------- calculation of the mean field Gamma
-c           call gamma(it)
-c
-c---------- diagonalization of the Dirac-Bogolibov equation
-            write(6,'(a)',advance='no')
-     &       ' Eigensolve start...';call flush(6);
-            call dirhb(it,.false.)
-c
-c---------- calculation of densities in oscillator basis
-            call denssh(it,.false.)
-c
-         enddo   ! it
-         write(6,*)'Other routines from iter()...';
-         call flush(6);
-c
-c------- calculation of new densities in r-space
-         call densit(.false.)
-c
-c------- new coupling constants
-         call gdd(.false.)
-c
-c------- calculation of new fields
-         call field(.false.)
-c
-c------- calculation of the Coulomb potential
-         call coulom(.false.)
-c
-c------- calculation of expectation values
-         call expect(.false.)
-c
-c------- potentials in r-space
-         call cstrpot(.false.)
-         call poten(.false.)
-c
-c------- pairing field
-         do it = 1,2
-            call gamma(it)
-            call delta(it,.false.)
-         enddo
-
-         call broyden(.false.)
-c
-c------- check for convergence
-         if (ii.gt.2) then
-            ic = itestc()
-            if (ic.eq.1) goto 21
-            if (ic.eq.2) goto 31
-         endif
-c
-      enddo   ! ite
-
-
-   21 write(6,100) nucnam,nmas,text1,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
-      goto 40
-c
-   31 write(6,101) nucnam,nmas,text2,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ii,text3,si
-c
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   40 write(l6,*) '****** END ITER ************************************'
-      write( 6,*) '****** END ITER ************************************'
-c     read*
-c
-c      CALL zeit(2,'ITER_____',6,.false.)
-c
-  100 format(1x,68(1h*),/,2x,a2,i4,a27,i4,a14,f17.10,/,1x,68(1h*))
-  101 format(1x,a2,i4,a27,i4,a14,f17.10)
-  102 format(i3,a,f10.6,3(a,f7.3),a,f5.2)
-c
-      return
-c-end-ITER
-      end
-
-
-
+#endif
 
 
 
@@ -472,7 +818,7 @@ c-end-ITER
 
 c======================================================================c
 
-      subroutine dirhbapprox(it,lpr)
+      subroutine dirhb_abjelcic(it,lpr)
 
 c======================================================================c
 c
@@ -926,7 +1272,9 @@ c---- end of lambda-loop
 c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
       endif
       ala(it) = al
-
+#ifdef VERBOSE
+      write(6,'(a,i3)')'Number of lambda iterations: ', lit;
+#endif
 
 
 
@@ -968,8 +1316,6 @@ c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
 
 
 
-      write(6,'(a)')'...done!';
-
 
 
       if (lpr) then
@@ -983,28 +1329,9 @@ c
 C-end-DIRHB
       end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 c======================================================================c
 
-      subroutine dirhb(it,lpr)
+      subroutine dirhbfull_abjelcic(it,lpr)
 
 c======================================================================c
 c
@@ -1418,7 +1745,9 @@ c---- end of lambda-loop
 c        write(6,101) lit,'. Lambda-Iteration successful:',it,al,dn,sn
       endif
       ala(it) = al
-      write(6,'(a)')'...done!';
+#ifdef VERBOSE
+      write(6,'(a,i3)')'Number of lambda iterations: ', lit;
+#endif
 
       if (lpr) then
       write(l6,*) ' ****** END DIRHB **********************************'
