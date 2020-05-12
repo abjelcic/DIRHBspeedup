@@ -28,3 +28,8 @@ Keep in mind that underlying OpenBLAS is by default automatically parallelized, 
 Of course, you can use any other BLAS implementation (a slight modification of Makefile is needed) but I recommend OpenBLAS.
 
 For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code> and <code>OriginalDIRHB</code> by simply using the same input files <code>dirhb.dat</code> and <code>dirhb.par</code>.
+
+
+
+dirhbt kod, make original za originalan kod, moze ATLAS MKL...
+
