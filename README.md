@@ -32,4 +32,7 @@ For testing purpose, one can easily compare outputs of <code>ModifiedDIRHB</code
 
 
 dirhbt kod, make original za originalan kod, moze ATLAS MKL...
+<<<<<<< HEAD
 
+=======
+>>>>>>> 28baeec952fc31fd1d8fd4c8580c3bfd73d0de91
