@@ -25,7 +25,7 @@ How to install OpenBLAS on Linux machine: just follow few simple steps described
 [OpenBLAS](https://github.com/xianyi/OpenBLAS) is a fork of GotoBLAS, (Goto's [paper](https://dl.acm.org/doi/10.1145/1356052.1356053)) an open-source efficient implementation of BLAS fine-tuned for many
 modern architectures, comparable to Intel MKL. 
 
-Keep in mind that underlying OpenBLAS is by default automatically parallelized, and if the user wants to constrain the number of used threads to single thread, one should export the following variable in local environment: <code>OPENBLAS_NUM_THREADS=1</code>, which means, simply before running the program just type <code>export OPENBLAS_NUM_THREADS=1</code> in the console.
+Keep in mind that underlying OpenBLAS is by default automatically parallelized, and if the user wants to constrain the number of used threads to single thread, one should export the following variable in local environment: <code>OPENBLAS_NUM_THREADS=1</code>, which means, simply before running the program just type <code>export OPENBLAS_NUM_THREADS=1</code> in the command line.
 
 Of course, you can use any other BLAS implementation (a slight modification of Makefile is needed) but I recommend OpenBLAS.
 
