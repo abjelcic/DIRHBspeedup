@@ -37,3 +37,8 @@ Folder <code>OriginalDIRHB</code> contains origianal DIRHB code for reference.
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the origianl code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
 
+## BENCHMARK
+Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
+
+Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained deformation <code>betac=0.600</code>, <code>gammac=10.000</code> and <code>n0f=18</code> shells.
+
