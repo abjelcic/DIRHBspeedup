@@ -45,3 +45,4 @@ original code, it took 8 seconds in preparation phase, 16.5 minutes in iteration
 
 For calculating PES, one can use simpler variant of center of mass correction. Since many applications require at least 20 shells, this code makes it feasible to obtain PES of very heavy deformed nuclei in reasonable time.
 
+In future updates, I will try to improve the transformation to canonical basis and center of mass correction calculations.
