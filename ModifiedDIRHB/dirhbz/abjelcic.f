@@ -417,12 +417,12 @@ c
       enddo   ! ite
 
 
-   21 write(6,100) nucnam,nmas,text1,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ii,text3,si
+   21 write(6,100) nucnam,nmas,text1,ite1+ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text1,ite1+ii,text3,si
       goto 40
 c
-   31 write(6,101) nucnam,nmas,text2,ii,text3,si
-      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ii,text3,si
+   31 write(6,101) nucnam,nmas,text2,ite1+ii,text3,si
+      if (l6.ne.6) write(l6,100) nucnam,nmas,text2,ite1+ii,text3,si
 c
 
 
