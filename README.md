@@ -32,7 +32,7 @@ minutes (unlike ATLAS).
 
 
 ## HOW TO USE
-Folder <code>OriginalDIRHB</code> contains origianal DIRHB code for reference.
+Folder <code>OriginalDIRHB</code> contains the origianal DIRHB code for reference.
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the origianl code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
@@ -45,4 +45,4 @@ original code, it took 8 seconds in preparation phase, 16.5 minutes in iteration
 
 For calculating PES, one can use simpler variant of center of mass correction. Since many applications require at least 20 shells, this code makes it feasible to obtain PES of very heavy deformed nuclei in reasonable time.
 
-In future updates, I will try to improve the transformation to canonical basis and center of mass correction calculations.
+<strike>In future updates, I will try to improve the transformation to canonical basis and center of mass correction calculations</strike>.
