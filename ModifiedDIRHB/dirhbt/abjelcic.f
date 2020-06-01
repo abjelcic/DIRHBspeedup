@@ -54,8 +54,8 @@ c---- Coulomb initialization
       write(6,'(a,f10.3,a)')'  Elapsed time(initialization): ',time,'s';
       write(6,*);
 #endif
-      call tictoc('tic',time);
 c---- iteration
+      call tictoc('tic',time);
       call iter(.true.);
 #ifndef ORIGINAL
       write(6,*);
@@ -406,6 +406,22 @@ c-end-ITER
       end
 #endif
 
+c=====================================================================c
+      subroutine centmas
+c======================================================================c
+      implicit real*8 (a-h,o-z)
+      include 'dirhb.par'
+
+      call cmcd
+#ifdef ORIGINAL
+      call cmcn
+#else
+      call cmcn_abjelcic
+#endif
+
+      return
+      end
+
 c======================================================================c
 
       subroutine assert( statement , error_message )
@@ -423,6 +439,7 @@ c======================================================================c
 
       return;
       end;
+
 c======================================================================c
 
       subroutine tictoc( tic_or_toc , time )
@@ -446,6 +463,7 @@ c======================================================================c
 
       return;
       end;
+
 c======================================================================c
 
       subroutine print_header()
@@ -460,17 +478,17 @@ c======================================================================c
       write(6,*)'*                                                   *';
       write(6,*)'* This is the original DIRHBT code (2014) directly  *';
       write(6,*)'* from CPC program library with few modifications:  *';
-      write(6,*)'* 1.) The subroutine iter is deleted from dirhbt.f  *';
-      write(6,*)'* 2.) Main is deleted from dirhbt.f                 *';
-      write(6,*)'* 3.) Ref. BLAS routines are deleted from dirhbt.f  *';
-      write(6,*)'* 4.) Some minor bugs in dirhbt.f are fixed         *';
-      write(6,*)'* 5.) File abjelcic.f is added                      *';
-      write(6,*)'* 6.) Makefile is slightly modified                 *';
-      write(6,*)'* 7.) (Open)BLAS & LAPACK are required              *';
+      write(6,*)'* 1.) The routine iter    is deleted from dirhbt.f  *';
+      write(6,*)'* 2.) The routine centmas is deleted from dirhbt.f  *';
+      write(6,*)'* 3.) Main is deleted from dirhbt.f                 *';
+      write(6,*)'* 4.) Ref. BLAS routines are deleted from dirhbt.f  *';
+      write(6,*)'* 5.) Some minor bugs in dirhbt.f are fixed         *';
+      write(6,*)'* 6.) File abjelcic.f is added                      *';
+      write(6,*)'* 7.) Makefile is slightly modified                 *';
+      write(6,*)'* 8.) (Open)BLAS & LAPACK are required              *';
       write(6,*)'*                                                   *';
-      write(6,*)'* If you notice something weird: abjelcic@phy.hr,   *';
-      write(6,*)'* or more preferably, post an issue on GitHub       *';
-      write(6,*)'* repository: github.com/abjelcic/DIRHBspeedup      *';
+      write(6,*)'* If you notice something weird post an issue on    *';
+      write(6,*)'* GitHub repo: github.com/abjelcic/DIRHBspeedup.    *';
       write(6,*)'*                                                   *';
       write(6,*)'*****************************************************';
       write(6,*);
@@ -1599,6 +1617,284 @@ c======================================================================c
 
 
       end
+
+
+c=====================================================================c
+
+      subroutine cmcn_abjelcic
+
+c======================================================================c
+      implicit real*8 (a-h,o-z)
+      include 'dirhb.par'
+
+      logical lpx,lpxx,lpy,lpyy,lpz,lpzz;
+      character tb*5                                            ! blokap
+      character tt*8                                            ! bloqua
+      character nucnam*2
+
+      common /blokap/ nb,mu(nbx),tb(nbx)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /baspar/ hom,hb0,b0
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /gfvsq / sq(0:igfv)
+      common /gfviv / iv(0:igfv)
+      common /physco/ hbc,alphi,r0
+      common /mathco/ zero,one,two,half,third,pi
+      common /masses/ amu,amsig,amome,amdel,amrho
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /nucnuc/ amas,nama,npr(2),nucnam
+      common /cenmas/ ecmd(3),ecmn(3),ecm(3)
+      common /eeecan/ eecan(nkx,4),decan(nkx,4),vvcan(nkx,4),
+     &                fgcan(nhx,nkx,4),mulcan(nkx,4),akacan(nkx,4)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
+
+
+
+      double precision V1mat ( NHX , NKX );
+      double precision V2mat ( NHX , NKX );
+      double precision Px2mat( NHX , NHX );
+      double precision Py2mat( NHX , NHX );
+      double precision Pz2mat( NHX , NHX );
+      double precision Tmat(max(NHX,NKX),max(NHX,NKX));
+      double precision Ansx( NKX , NKX );
+      double precision Ansy( NKX , NKX );
+      double precision Ansz( NKX , NKX );
+
+
+      if( icm .lt. 2 ) then
+         ecm(1) = -0.75d0 * hom;
+         ecm(2) = -0.75d0 * hom;
+         ecm(3) = -0.75d0 * hom;
+         return;
+      endif
+
+
+
+      faccm = -0.5d0 / (amu*amas);
+      ax1   = +1.0d0 / ( b0*bx * DSQRT(2.d0) );
+      ay1   = +1.0d0 / ( b0*by * DSQRT(2.d0) );
+      az1   = +1.0d0 / ( b0*bz * DSQRT(2.d0) );
+
+      do it = 1 , 2
+
+          ecmn(it) = 0.d0;
+
+          do ib1 = 1 , nb
+              k11 = kacan(ib1,it)+1;
+              k12 = kacan(ib1,it)+kdcan(ib1,it);
+              kd1 = kdcan(ib1,it);
+              nf1 = id(ib1,1);
+              do k1 = k11 , k12
+                  jk = k1 - k11 + 1;
+                  do n = 1 , id(ib1,1)+id(ib1,2)
+                      V1mat(n,jk) = fgcan(n,k1,it);
+                  enddo
+              enddo
+
+
+              do ib2 = 1 , nb
+                  k21 = kacan(ib2,it)+1;
+                  k22 = kacan(ib2,it)+kdcan(ib2,it);
+                  kd2 = kdcan(ib2,it);
+                  nf2 = id(ib2,1);
+                  do k2 = k21 , k22
+                      jk = k2 - k21 + 1;
+                      do n = 1 , id(ib2,1)+id(ib2,2)
+                          V2mat(n,jk) = fgcan(n,k2,it);
+                      enddo
+                  enddo
+
+
+                  Ansx = 0.0d0;
+                  Ansy = 0.0d0;
+                  Ansz = 0.0d0;
+
+                  do ifg = 1 , 2
+                      nd1 = id(ib1,ifg);
+                      nd2 = id(ib2,ifg);
+                      i01 = ia(ib1,ifg);
+                      i02 = ia(ib2,ifg);
+                      do n2 = 1 , nd2
+                          nx2  = nxyz(i02+n2,1);
+                          ny2  = nxyz(i02+n2,2);
+                          nz2  = nxyz(i02+n2,3);
+                          Nsh2 = nx2 + ny2 + nz2;
+                          do n1 = 1 , nd1
+                              nx1  = nxyz(i01+n1,1);
+                              ny1  = nxyz(i01+n1,2);
+                              nz1  = nxyz(i01+n1,3);
+                              Nsh1 = nx1 + ny1 + nz1;
+
+                              Px2mat(n1,n2) = 0.0d0;
+                              Py2mat(n1,n2) = 0.0d0;
+                              Pz2mat(n1,n2) = 0.0d0;
+
+                              if( MOD(Nsh1+Nsh2,2) .eq. 0 ) CYCLE;
+
+                              lpx  =          nx1 .eq. nx2;
+                              lpy  =          ny1 .eq. ny2;
+                              lpz  =          nz1 .eq. nz2;
+                              lpxx = abs(nx1-nx2) .eq.   1;
+                              lpyy = abs(ny1-ny2) .eq.   1;
+                              lpzz = abs(nz1-nz2) .eq.   1;
+
+                              if( lpxx .and. lpy  .and. lpz  ) then
+                              Px2mat(n1,n2) = ax1
+     &                                        * (-1)**max(nx1,nx2)
+     &                                        * SQRT(DBLE(max(nx1,nx2)))
+     &                                        * (-1)**(ny2+1)
+     &                                        * (-1)**(ifg+1);
+                              endif
+                              if( lpx  .and. lpyy .and. lpz  ) then
+                              Py2mat(n1,n2) = ay1
+     &                                        * SQRT(DBLE(max(ny1,ny2)))
+     &                                        * (-1)**(ifg+1);
+                              endif
+                              if( lpx  .and. lpy  .and. lpzz ) then
+                              Pz2mat(n1,n2) = az1
+     &                                        * SQRT(DBLE(max(nz1,nz2)))
+     &                                        * SIGN(1,nz2-nz1);
+                              endif
+
+
+                          enddo
+                      enddo
+
+
+                  ! Ansx
+                  call dgemm( 'N' , 'N' ,
+     &                        nd1, kd2, nd2,
+     &                        1.d0,
+     &                        Px2mat(1,1)                , NHX,
+     &                        V2mat( (ifg-1)*nf2+1 , 1 ) , NHX,
+     &                        0.d0,
+     &                        Tmat(1,1)                  , max(NHX,NKX)
+     &                       );
+                  call dgemm( 'T' , 'N' ,
+     &                        kd1, kd2, nd1,
+     &                        1.d0,
+     &                        V1mat( (ifg-1)*nf1+1 , 1 ) , NHX,
+     &                        Tmat(1,1)                  , max(NHX,NKX),
+     &                        1.d0,
+     &                        Ansx(1,1)                  , NKX
+     &                       );
+
+
+                  ! Ansy
+                  call dgemm( 'N' , 'N' ,
+     &                        nd1, kd2, nd2,
+     &                        1.d0,
+     &                        Py2mat(1,1)                , NHX,
+     &                        V2mat( (ifg-1)*nf2+1 , 1 ) , NHX,
+     &                        0.d0,
+     &                        Tmat(1,1)                  , max(NHX,NKX)
+     &                       );
+                  call dgemm( 'T' , 'N' ,
+     &                        kd1, kd2, nd1,
+     &                        1.d0,
+     &                        V1mat( (ifg-1)*nf1+1 , 1 ) , NHX,
+     &                        Tmat(1,1)                  , max(NHX,NKX),
+     &                        1.d0,
+     &                        Ansy(1,1)                  , NKX
+     &                       );
+
+
+                  ! Ansz
+                  call dgemm( 'N' , 'N' ,
+     &                        nd1, kd2, nd2,
+     &                        1.d0,
+     &                        Pz2mat(1,1)                , NHX,
+     &                        V2mat( (ifg-1)*nf2+1 , 1 ) , NHX,
+     &                        0.d0,
+     &                        Tmat(1,1)                  , max(NHX,NKX)
+     &                       );
+                  call dgemm( 'T' , 'N' ,
+     &                        kd1, kd2, nd1,
+     &                        1.d0,
+     &                        V1mat( (ifg-1)*nf1+1 , 1 ) , NHX,
+     &                        Tmat(1,1)                  , max(NHX,NKX),
+     &                        1.d0,
+     &                        Ansz(1,1)                  , NKX
+     &                       );
+
+                  enddo
+
+
+                  do k2 = k21 , k22
+                      call assert(vvcan(k2,it).ge.0.d0,'vk^2 < 0');
+                      call assert(vvcan(k2,it).le.1.d0,'vk^2 > 1');
+                      vk2 = DSQRT(        vvcan(k2,it) );
+                      uk2 = DSQRT( 1.d0 - vvcan(k2,it) );
+                      do k1 = k11 , k12
+                          call assert(vvcan(k1,it).ge.0.d0,'vk^2 < 0');
+                          call assert(vvcan(k1,it).le.1.d0,'vk^2 > 1');
+                          vk1 = DSQRT(        vvcan(k1,it) );
+                          uk1 = DSQRT( 1.d0 - vvcan(k1,it) );
+
+                          vfac = + vk1*vk1*vk2*vk2
+     &                           + vk1*uk1*vk2*uk2;
+
+                          ik = k1 - k11 + 1;
+                          jk = k2 - k21 + 1;
+                          Ans  = + Ansx(ik,jk)**2.d0
+     &                           + Ansy(ik,jk)**2.d0
+     &                           + Ansz(ik,jk)**2.d0;
+
+                          ecmn(it) = ecmn(it) + 2.d0 * vfac * Ans;
+                      enddo
+                  enddo
+
+
+              enddo
+          enddo
+
+
+          ecmn(it) = -hbc*faccm * ecmn(it);
+          ecm(it)  = ecmd(it) + ecmn(it);
+      enddo
+
+
+
+
+      ecmn(3) = ecmn(1) + ecmn(2);
+      ecm (3) = ecm (1) + ecm (2);
+
+      return;
+      end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
