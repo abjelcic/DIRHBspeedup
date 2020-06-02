@@ -64,8 +64,10 @@ c---- iteration
 #endif
 c---- transformation to the canonical basis
       call tictoc('tic',time);
+#ifdef ORIGINAL
       call canon(.true.);
-#ifndef ORIGINAL
+#else
+      call canon_abjelcic(.true.);
       call tictoc('toc',time);
       write(6,'(a,f10.3,a)')'  Elapsed time(canon transf. ): ',time,'s';
 #endif
@@ -407,7 +409,9 @@ c-end-ITER
 #endif
 
 c=====================================================================c
+
       subroutine centmas
+
 c======================================================================c
       implicit real*8 (a-h,o-z)
       include 'dirhb.par'
@@ -474,7 +478,7 @@ c======================================================================c
 
       write(6,*);
       write(6,*)'*****************************************************';
-      write(6,*)'* Speedup by A.Bjelcic                              *';
+      write(6,*)'* Speedup by A.Bjelcic & Z.Drmac                    *';
       write(6,*)'*                                                   *';
       write(6,*)'* This is the original DIRHBT code (2014) directly  *';
       write(6,*)'* from CPC program library with few modifications:  *';
@@ -824,7 +828,7 @@ c======================================================================c
                   call assert(ndegen.le.DEGENBLOCK,'DEGENBLOCK small');
                   ndegenmax = max( ndegenmax , ndegen );
 
-                  ! eij
+                  ! eij (can be extracted even more efficient)
                   call dgemm( 'T','N', ndegen,ndegen,nf,
      &                        +1.d+0,      Q1(1,i),NBLOCK,
      &                                DeltaQ2(1,i),NBLOCK,
@@ -843,7 +847,7 @@ c======================================================================c
      &                                    hQ2(1,i),NBLOCK,
      &                        +1.d+0,     eij(1,1),DEGENBLOCK );
 
-                  ! dij
+                  ! dij (can be extracted even more efficient)
                   call dgemm( 'T','N', ndegen,ndegen,nf,
      &                        +1.d+0,      Q1(1,i),NBLOCK,
      &                                    hQ2(1,i),NBLOCK,
@@ -1084,7 +1088,6 @@ c======================================================================c
 
 
       end
-
 
 c======================================================================c
 
@@ -1618,7 +1621,6 @@ c======================================================================c
 
       end
 
-
 c=====================================================================c
 
       subroutine cmcn_abjelcic
@@ -1863,6 +1865,154 @@ c======================================================================c
       return;
       end;
 
+c=====================================================================c
+
+      subroutine canon_abjelcic(lpr)
+
+c======================================================================c
+
+      implicit real*8 (a-h,o-z)
+      include 'dirhb.par'
+
+      logical lpr
+
+      character*8 tbb(nhfbx)
+      character tp*1,tis*1,tit*8,tl*1                           ! textex
+      character tk*8,tx*8                                       ! blolev
+      character tt*8                                            ! bloqua
+      character tb*5                                            ! blokap
+c
+c
+      dimension aa(nhhx),dd(nhhx),v2(nhx),z(nhx),eb(nhx),h(nhx),d(nhx)
+      dimension aaka(nhhx),ak(nhx)
+
+      common /eeecan/ eecan(nkx,4),decan(nkx,4),vvcan(nkx,4),
+     &                fgcan(nhx,nkx,4),mulcan(nkx,4),akacan(nkx,4)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
+      common /blodir/ ka(nbx,4),kd(nbx,4)
+      common /gfvsq / sq(0:igfv)
+      common /blokap/ nb,mu(nbx),tb(nbx)
+      common /blolev/ nk(4),ibk(nkx,4),tk(nkx,4)
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /hamham/ hh(nhhx,nb2x)
+      common /deldel/ de(nhhx,nb2x)
+      common /fermi / ala(2),tz(2)
+      common /mathco/ zero,one,two,half,third,pi
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /pair  / del(2),spk(2),spk0(2)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+      common /textex/ tp(2),tis(2),tit(2),tl(0:30)
+      common /waveuv/ fguv(nhfbx,nkx,4),equ(nkx,4)
+
+      data ash/100.0/
+
+
+
+      double precision Umat ( NHX , NKX );
+      double precision Vmat ( NHX , NKX );
+      double precision rho  ( NHX , NHX );
+      double precision kappa( NHX , NHX );
+      double precision Tmat1( NHX , NHX );
+      double precision Tmat2( NHX , NHX );
+      double precision Tmat3( NHX , NHX );
+      integer ISUPPZ( 2*NHX );
+      parameter( LWORKrho = NHX*NHX );
+      double precision WORK(LWORKrho);
+      parameter( LIWORKrho = NHX*NHX );
+      integer IWORK( LIWORKrho );
+
+
+
+
+      if(lpr) then
+      write(l6,*) ' ****** BEGIN CANON *******************************';
+      endif
+
+
+
+
+
+
+      do it = 1 , 2
+
+
+
+
+
+         if (lpr) write(l6,100) tit(it)
+  100    format(' single-particle energies and gaps ',1x,
+     &          'in the canonical basis: ',a,/,1x,66(1h-))
+         if (lpr) write(l6,1000) ' ',' N pi ','  [ nx ny nz]',
+     &                           'smax','eecan','vvcan','decan'
+1000     format(a2,a6,a13,2a11,2x,2a11)
+
+
+
+
+
+
+         klp = 0
+         kla = 0
+         do ib = 1,nb
+	        mul  = mu(ib);
+            nf   = id(ib,1);
+            ng   = id(ib,2);
+            nh   = nf + ng;
+            nhfb = nh + nh;
+            i0f  = ia(ib,1);
+            i0g  = ia(ib,2);
+	        mf   = ib + (it-1)*nbx;
+            kf   = kd(ib,it  );
+            kg   = kd(ib,it+2);
+	        k0f  = ka(ib,it  );
+	        k0g  = ka(ib,it+2);
+
+
+
+            do k = k0f+1 , k0f+kf
+                do n = 1 , nh
+                    Umat( n , k-k0f ) = fguv(n   ,k,it);
+                    Vmat( n , k-k0f ) = fguv(n+nh,k,it);
+                enddo
+            enddo
+            call dsyrk( 'L','N',  nh,kf,
+     &                  1.d0,  Vmat(1,1),NHX,
+     &                  0.d0,   rho(1,1),NHX  );
+            call dsyr2k( 'L','N', nf,kf,
+     &                   0.5d0,  Vmat(1,1),NHX,
+     &                           Umat(1,1),NHX,
+     &                   0.0d0, kappa(1,1),NHX  );
+            do k = k0g+1 , k0g+kg
+                do n = 1 , nh
+                    Vmat( n , k-k0g ) = fguv(n+nh,k,it+2);
+                enddo
+            enddo
+            call dsyrk( 'L','N',  nh,kg,
+     &                   ash,  Vmat(1,1),NHX,
+     &                  1.d0,   rho(1,1),NHX  );
+
+            do n2 = 1 , nh
+                do n1 = 1 , nh
+
+                    if( n1 .ge. n2 ) then
+                        aa( n1 + (n2-1)*nh ) = rho(n1,n2);
+                    else
+                        aa( n1 + (n2-1)*nh ) = rho(n2,n1);
+                    endif
+
+                    if( n1.le.nf .and. n2.le.nf ) then
+                        if( n1 .ge. n2 ) then
+                            aaka( n1 + (n2-1)*nh ) = kappa(n1,n2);
+                        else
+                            aaka( n1 + (n2-1)*nh ) = kappa(n2,n1);
+                        endif
+                    else
+                        aaka( n1 + (n2-1)*nh ) = 0.d0;
+                    endif
+
+                enddo
+            enddo
 
 
 
@@ -1871,6 +2021,34 @@ c======================================================================c
 
 
 
+        ABSTOL     = DLAMCH( 'Safe minimum' );
+        call dsyevr( 'V','A','L', nh,
+     &               aa,nh,
+     &               0.d0, 1.d9,
+     &               1, nh,
+     &               ABSTOL, NFOUND,
+     &               v2,
+     &               dd,nh,
+     &               ISUPPZ,
+     &               WORK,  -1,
+     &               IWORK, -1,
+     &               INFO                                             );
+        call assert( INFO  .eq.0  , 'INFO   != 0 '                    );
+        call assert(INT(WORK(1)+0.5d0).le.LWORKrho ,'LWORK  too small');
+        call assert(          IWORK(1).le.LIWORKrho,'LIWORK too small');
+        call dsyevr( 'V','A','L', nh,
+     &               aa,nh,
+     &               0.d0, 1.d9,
+     &               1, nh,
+     &               ABSTOL, NFOUND,
+     &               v2,
+     &               dd,nh,
+     &               ISUPPZ,
+     &               WORK,  LWORKrho,
+     &               IWORK, LIWORKrho,
+     &               INFO                                             );
+        call assert( INFO  .eq.0  , 'INFO   != 0 '                    );
+        call assert( NFOUND.eq.nh , 'NFOUND != nh'                    );
 
 
 
@@ -1878,14 +2056,202 @@ c======================================================================c
 
 
 
+          eps = 1.d-6;
+          call degen_abjelcic(nh,nh,v2,dd,hh(1,mf),eb,eps,aa,z);
+
+
+
+          do k = 1 , nh
+	          cmax = 0.d0;
+	          do i = 1 , nh
+	              if( DABS(dd( i + (k-1)*nh )) .gt. DABS(cmax) ) then
+                      cmax = dd( i + (k-1)*nh );
+                  endif
+              enddo
+	          if( cmax .lt. 0.d0 ) then
+	              do i = 1,nh
+		              dd( i + (k-1)*nh ) = - dd( i + (k-1)*nh );
+	              enddo
+	          endif
+          enddo
+
+
+
+
+          call dsymm( 'L','L', nh,nh,
+     &                1.d0,  hh(1,mf) , nh,
+     &                       dd       , nh,
+     &                0.d0, Tmat1(1,1), NHX  );
+          call dsymm( 'L','L', nh,nh,
+     &                1.d0,  de(1,mf) , nh,
+     &                       dd       , nh,
+     &                0.d0, Tmat2(1,1), NHX  );
+          call dsymm( 'L','L', nh,nh,
+     &                1.d0,  aaka     , nh,
+     &                       dd       , nh,
+     &                0.d0, Tmat3(1,1), NHX  );
+          do k = 1 , nh
+               h(k) = ddot(nh, Tmat1(1,k),1, dd(1+(k-1)*nh),1);
+               d(k) = ddot(nh, Tmat2(1,k),1, dd(1+(k-1)*nh),1);
+              ak(k) = ddot(nh, Tmat3(1,k),1, dd(1+(k-1)*nh),1);
+          enddo
 
 
 
 
 
+c------- reordering according to the energy h(k)
+            call ordx2(nh,h,d,v2,ak,dd)
+
+            do k = 1,nh
+               if (v2(k).lt.zero .or. v2(k).gt.2.d0) v2(k) = zero
+               if (v2(k).gt.one) v2(k) = one
+            enddo ! k
+
+            kacan(ib,it)   = klp
+            do k=1,nf
+               klp=klp+1
+               eecan(klp,it)=h(ng+k)
+               decan(klp,it)=d(ng+k)
+               vvcan(klp,it)=v2(ng+k)
+               akacan(klp,it)=ak(ng+k)
+               mulcan(klp,it)=mul
+               do i=1,nh
+                  fgcan(i,klp,it)=dd(i+(ng+k-1)*nh)
+               enddo
+            enddo
+            kdcan(ib,it) = klp - kacan(ib,it)
+
+            kacan(ib,it+2) = kla
+            do k=1,ng
+               kla=kla+1
+               eecan(kla,it+2)=h(k)
+               decan(kla,it+2)=d(k)
+               vvcan(kla,it+2)=v2(k)
+               akacan(kla,it+2)=ak(k)
+               mulcan(kla,it+2)=mul
+               do i=1,nh
+                  fgcan(i,kla,it+2)=dd(i+(k-1)*nh)
+               enddo
+            enddo
+            kdcan(ib,it+2) = kla - kacan(ib,it+2)
+c------- printout for particles
+            if (ib.eq.1) e0 = h(ng+1)
+            k1 = kacan(ib,it)+1
+            k2 = kacan(ib,it)+kdcan(ib,it)
+            do k = k1,k2
+               e1 = eecan(k,it)
+               v1 = vvcan(k,it)
+               d1 = decan(k,it)
+               ak1=akacan(k,it)
+c           search for the main oscillator component
+               smax = zero
+               do i = 1,nh
+                  s = abs(fgcan(i,k,it))
+                  if (s.gt.smax) then
+                     smax = s
+                     imax = i
+                  endif
+               enddo
+               dx = fgcan(imax,k,it)
+c
+               if (lpr) write(l6,101) k,tp(ib),
+     &                    tt(i0f+imax),smax,
+     &                    e1,v1,d1
+  101 format(i4,'  ',a1,'  ','  ',a8,'  ',6x,f5.2,3f12.4)
+           enddo  ! k
+c---- end loop over ip-blocks
+   10    enddo !ib
+         nkcan(it)   = klp
+         nkcan(it+2) = kla
+
+      enddo   ! it
+c
+  102 if (lpr)
+     &write(l6,*) ' ****** END CANON **********************************'
+c
+      return
+c-end-CANON
+      end
+
+c======================================================================c
+
+      subroutine degen_abjelcic( na,n, ea, dd, bb, eb, eps, zz,z )
+
+c======================================================================c
+c
+c     EA    is a set of partially degenerate eigenvalues of some matrix
+c     DD    are the corresponding eigenvectors DD.
+c     BB    is a matrix, which is diagonalized in the subspaces of
+c           degenerate eigenvales EA.
+c     EB    contains the eigenvalues of BB in these subspaces.
+c     EPS   determines, to which accuracy the eigenvalues EA are
+c           considered to be degenerate
+c     ZZ,Z  are auxiliary arrays
+c
+c----------------------------------------------------------------------c
+
+
+      implicit real*8 (a-h,o-z)
+
+      dimension bb(na,n),dd(na,n),ea(n),eb(n)
+      dimension zz(na,n),z(n)
+
+      double precision    bbdd(na,n);
+      double precision ddtbbdd(na,n);
+      double precision   ddnew(na,n);
+
+      do i = 1 , n-1
+          call assert( ea(i) .le. ea(i+1) , 'eigenvalues not sorted!' );
+      enddo
+      do i = 1 , n
+          do j = 1 , i-1
+              call assert(DABS(bb(i,j)-bb(j,i)).le.1.d-10,'not symm');
+          enddo
+      enddo
+
+
+      iev = 1;
+      do while( iev .le. n )
+
+          ev = ea(iev);
+          do jev = iev , n
+              if( DABS(ea(jev)-ev).gt.eps ) EXIT;
+          enddo
+          jev = jev - 1;
+          ! ea(iev) = ea(iev+1) = ... = ea(jev-1) = ea(jev)
+          ndegen = jev-iev+1;
+
+
+          call dsymm( 'L','L', n,ndegen,
+     &                 1.d0,   bb(1,1)  ,na,
+     &                         dd(1,iev),na,
+     &                 0.d0, bbdd(1,1)  ,na     );
+          call dgemm( 'T','N', ndegen,n,ndegen,
+     &                 1.d0,      dd(1,iev),na,
+     &                          bbdd(1,1)  ,na,
+     &                 0.d0, ddtbbdd(1,1)  ,na  );
+
+          call sdiag( na,ndegen , ddtbbdd , eb(iev) , ddtbbdd , z , 1 );
+
+          call dgemm( 'N','N', n,ndegen,ndegen,
+     &                 1.d0,      dd(1,iev) ,na,
+     &                         ddtbbdd(1,1) ,na,
+     &                 0.d0,   ddnew(1,iev) ,na  );
+          do j = iev , jev
+              do i = 1 , n
+                  dd(i,j) = ddnew(i,j);
+              enddo
+          enddo
 
 
 
+          iev = jev + 1;
+      enddo
+
+
+      return;
+      end;
 
 
 
