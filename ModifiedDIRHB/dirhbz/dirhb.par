@@ -20,7 +20,7 @@ c---- number of gauss-meshpoints
       parameter (     NGLEG =      18 )
 c
 c---- maximal oscillator quantum number for fermions
-      parameter (     N0FX =       20 )
+      parameter (     N0FX =       30 )
       parameter (     nxx  =       N0FX/2)
 c
 c---- maximal number of (k,parity)-blocks
