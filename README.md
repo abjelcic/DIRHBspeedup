@@ -1,19 +1,19 @@
 # DIRHBspeedup
+Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/kontakt.html), 
+[Z. Drmac](https://web.math.pmf.unizg.hr/~drmac/).
 
 ## DIRHB
-This code is a small modification of the original [DIRHB code](https://www.sciencedirect.com/science/article/pii/S0010465514000836).
+This code is a small modification of the original [DIRHB](https://www.sciencedirect.com/science/article/pii/S0010465514000836) code.
 
 Primary focus is on improving the routine for spectral decomposition of
 HFB matrix. HFB matrix shows many good properties and they should be utilized.
 There are still many more improvements that can be done, e.g. faster calculation
-of densities in coordinate space from density matrix in configuration space,
-faster calculation of single particle Hamiltonian matrix h and improving 
-routines for calculating transformation to canonical basis and center of
-mass correction.
+of densities in coordinate space from density matrix in configuration space or
+faster calculation of single particle Hamiltonian matrix h.
 
 The paper which proves correctness of the method is in progress.
 Also, a complex version of the method is in progress, since quantum chemists
-encounter similar matrices (Fock matrix).
+encounter similar matrices (Fock matrix generated from Fock operator with Kramers partners).
 
 
 
@@ -32,17 +32,17 @@ minutes (unlike ATLAS).
 
 
 ## HOW TO USE
-Folder <code>OriginalDIRHB</code> contains the origianal DIRHB code for reference.
+Folder <code>OriginalDIRHB</code> contains the origianal [DIRHB code](http://cpc.cs.qub.ac.uk/summaries/AESN_v1_0.html) for reference.
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the origianl code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
+Full paper with input parameters description can be found [here](). 
 
 ## BENCHMARK - DIRHBT
 Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
 
-Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained parameters <code>betac=0.600</code>, <code>gammac=10.000</code>, <code>cqad=0.010</code> and <code>n0f=18</code> shells. To reproduce the results of the
-original code, it took 8 seconds in preparation phase, 16.5 minutes in iteration phase, 3.1 minutes in transformation to canonical basis and 92.4 minutes in center of mass correction calculation. For comparison, iteration phase of the original code took approximately 35 hours.
+Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained parameters <code>betac=0.600</code>, <code>gammac=10.000</code>, <code>cqad=0.010</code> and <code>n0f=18</code> shells.
 
-For calculating PES, one can use simpler variant of center of mass correction. Since many applications require at least 20 shells, this code makes it feasible to obtain PES of very heavy deformed nuclei in reasonable time.
+To reproduce the results of the original code, it took approximately 16.5 minutes.
+For comparison, iteration phase of the original code took 35 hours.
 
-<strike>In future updates, I will try to improve the transformation to canonical basis and center of mass correction calculations</strike>.
