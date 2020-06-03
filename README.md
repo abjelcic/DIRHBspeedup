@@ -9,7 +9,7 @@ Primary focus is on improving the routine for spectral decomposition of
 HFB matrix in the triaxial code. HFB matrix shows many good properties and they should be utilized.
 There are still many more improvements that can be done, e.g. faster calculation
 of densities in coordinate space from density matrix in configuration space or
-faster calculation of single particle Hamiltonian matrix h.
+faster calculation of single particle Hamiltonian matrix.
 
 The paper which proves correctness of the method is in progress.
 Also, a complex version of the method is in progress, since quantum chemists
