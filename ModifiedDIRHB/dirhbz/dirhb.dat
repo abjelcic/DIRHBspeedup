@@ -1,4 +1,4 @@
-n0f      =   20  20                ! number of osc. shells (F and B)
+n0f      =   30  20                ! number of osc. shells (F and B)
 def-bas  =   +0.600                ! deformation of the h.o. basis
 def-ini  =   +0.600                ! deformation of the initial W.S. pot
 inin     =    1    1               ! initialization
@@ -10,4 +10,4 @@ Force    =  DD-ME2                 ! Parameterset of the Lagrangian
 c-------------------------------------------------------------------
 icstr    =  1                      ! constraint calculation (0=no)
 betac    =  +0.600                 ! expected beta value
-cquad    =  0.010                  ! spring constant
+cquad    =  0.0010                 ! spring constant
