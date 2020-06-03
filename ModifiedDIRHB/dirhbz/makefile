@@ -6,7 +6,7 @@ DBGFLAGS = -g -cpp -fcheck=all -DDEBUG -mcmodel=large
 
 ORIGFLAGS = -O3 -cpp -DORIGINAL -mcmodel=large -march=native
 
-BLAS = -I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas
+BLAS = -I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib/ -lopenblas
      # -lblas
      # /opt/OpenBLAS/lib/libopenblas.a
 
@@ -27,3 +27,7 @@ original: $(SRC) $(PAR)
 
 clean:
 	rm -rf *.o *.wel *.del *.out *.plo run dbg original
+
+
+# export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
+# export OPENBLAS_NUM_THREADS=1
