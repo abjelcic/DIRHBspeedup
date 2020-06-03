@@ -32,7 +32,7 @@ minutes (unlike ATLAS).
 
 
 ## HOW TO USE
-Folder <code>OriginalDIRHB</code> contains the origianal [DIRHB code](http://cpc.cs.qub.ac.uk/summaries/AESN_v1_0.html) for reference.
+Folder <code>OriginalDIRHB</code> contains the original [DIRHB code](http://cpc.cs.qub.ac.uk/summaries/AESN_v1_0.html) for reference.
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the original code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
