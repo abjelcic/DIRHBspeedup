@@ -6,7 +6,7 @@ Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/k
 This code is a small modification of the original [DIRHB](https://www.sciencedirect.com/science/article/pii/S0010465514000836) code.
 
 Primary focus is on improving the routine for spectral decomposition of
-HFB matrix. HFB matrix shows many good properties and they should be utilized.
+HFB matrix in the triaxial code. HFB matrix shows many good properties and they should be utilized.
 There are still many more improvements that can be done, e.g. faster calculation
 of densities in coordinate space from density matrix in configuration space or
 faster calculation of single particle Hamiltonian matrix h.
@@ -45,5 +45,5 @@ Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained p
 
 To reproduce the results of the original code, it took approximately 16.5 minutes.
 For comparison, the original code took 35 hours.
-To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095040 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical when calculating potential energy surfaces (PES).
+To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095038 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical when calculating potential energy surfaces (PES).
 

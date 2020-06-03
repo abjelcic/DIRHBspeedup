@@ -520,9 +520,8 @@ c======================================================================c
       write(6,*)'* 7.) Makefile is slightly modified                 *';
       write(6,*)'* 8.) (Open)BLAS & LAPACK are required              *';
       write(6,*)'*                                                   *';
-      write(6,*)'* If you notice something weird: abjelcic@phy.hr,   *';
-      write(6,*)'* or more preferably, post an issue on GitHub       *';
-      write(6,*)'* repository: github.com/abjelcic/DIRHBspeedup      *';
+      write(6,*)'* If you notice something weird post an issue on    *';
+      write(6,*)'* GitHub repo: github.com/abjelcic/DIRHBspeedup.    *';
       write(6,*)'*                                                   *';
       write(6,*)'*****************************************************';
       write(6,*);
