@@ -22,6 +22,9 @@ BLAS and LAPACK are required.
 
 How to install OpenBLAS on Linux machine: just follow few simple steps described in the [video](https://www.youtube.com/watch?v=85hm_kbwOJs).
 
+How to install LAPACK on Linux machine: just follow few simple steps described in the [video](https://www.youtube.com/watch?v=5N1QYWxAAL4).
+
+
 [OpenBLAS](https://github.com/xianyi/OpenBLAS) is a fork of GotoBLAS, (Goto's [paper](https://dl.acm.org/doi/10.1145/1356052.1356053)) an open-source efficient implementation of BLAS fine-tuned for many
 modern architectures, comparable to Intel MKL. 
 
