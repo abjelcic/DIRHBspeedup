@@ -45,5 +45,5 @@ Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained p
 
 To reproduce the results of the original code, it took approximately 16.5 minutes.
 For comparison, the original code took 35 hours.
-To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095040 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical.
+To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095040 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical when calculating potential energy surfaces (PES).
 
