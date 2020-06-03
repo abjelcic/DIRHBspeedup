@@ -507,7 +507,7 @@ c======================================================================c
 
       write(6,*);
       write(6,*)'*****************************************************';
-      write(6,*)'* Speedup by A.Bjelcic                              *';
+      write(6,*)'* Speedup by A.Bjelcic & Z.Drmac                    *';
       write(6,*)'*                                                   *';
       write(6,*)'* This is the original DIRHBZ code (2014) directly  *';
       write(6,*)'* from CPC program library with few modifications:  *';

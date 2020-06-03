@@ -67,7 +67,7 @@ c---- transformation to the canonical basis
 #ifdef ORIGINAL
       call canon(.true.);
 #else
-      call canon_abjelcic(.true.);
+      call canon_abjelcic(.false.);
       call tictoc('toc',time);
       write(6,'(a,f10.3,a)')'  Elapsed time(canon transf. ): ',time,'s';
 #endif
@@ -408,7 +408,7 @@ c-end-ITER
       end
 #endif
 
-c=====================================================================c
+c======================================================================c
 
       subroutine centmas
 
@@ -484,12 +484,13 @@ c======================================================================c
       write(6,*)'* from CPC program library with few modifications:  *';
       write(6,*)'* 1.) The routine iter    is deleted from dirhbt.f  *';
       write(6,*)'* 2.) The routine centmas is deleted from dirhbt.f  *';
-      write(6,*)'* 3.) Main is deleted from dirhbt.f                 *';
-      write(6,*)'* 4.) Ref. BLAS routines are deleted from dirhbt.f  *';
-      write(6,*)'* 5.) Some minor bugs in dirhbt.f are fixed         *';
-      write(6,*)'* 6.) File abjelcic.f is added                      *';
-      write(6,*)'* 7.) Makefile is slightly modified                 *';
-      write(6,*)'* 8.) (Open)BLAS & LAPACK are required              *';
+      write(6,*)'* 3.) Output of the routine canon is suppresed      *';
+      write(6,*)'* 4.) Main is deleted from dirhbt.f                 *';
+      write(6,*)'* 5.) Ref. BLAS routines are deleted from dirhbt.f  *';
+      write(6,*)'* 6.) Some minor bugs in dirhbt.f are fixed         *';
+      write(6,*)'* 7.) File abjelcic.f is added                      *';
+      write(6,*)'* 8.) Makefile is slightly modified                 *';
+      write(6,*)'* 9.) (Open)BLAS & LAPACK are required              *';
       write(6,*)'*                                                   *';
       write(6,*)'* If you notice something weird post an issue on    *';
       write(6,*)'* GitHub repo: github.com/abjelcic/DIRHBspeedup.    *';
@@ -1621,7 +1622,7 @@ c======================================================================c
 
       end
 
-c=====================================================================c
+c======================================================================c
 
       subroutine cmcn_abjelcic
 
@@ -1865,7 +1866,7 @@ c======================================================================c
       return;
       end;
 
-c=====================================================================c
+c======================================================================c
 
       subroutine canon_abjelcic(lpr)
 
@@ -2021,7 +2022,7 @@ c
 
 
 
-        ABSTOL     = DLAMCH( 'Safe minimum' );
+        ABSTOL = DLAMCH( 'Safe minimum' );
         call dsyevr( 'V','A','L', nh,
      &               aa,nh,
      &               0.d0, 1.d9,
@@ -2056,7 +2057,7 @@ c
 
 
 
-          eps = 1.d-6;
+          eps = 1.d-10;
           call degen_abjelcic(nh,nh,v2,dd,hh(1,mf),eb,eps,aa,z);
 
 
@@ -2166,12 +2167,14 @@ c---- end loop over ip-blocks
          nkcan(it+2) = kla
 
       enddo   ! it
-c
-  102 if (lpr)
-     &write(l6,*) ' ****** END CANON **********************************'
-c
+
+
+      if(lpr) then
+      write(l6,*) ' ****** END CANON *********************************';
+      endif
+
+
       return
-c-end-CANON
       end
 
 c======================================================================c
@@ -2191,6 +2194,9 @@ c     ZZ,Z  are auxiliary arrays
 c
 c----------------------------------------------------------------------c
 
+      !Note that eb is actually not valid in the original code...
+      !because, when ndegen=1, then even the original code doesn't
+      !calculate eb(.)
 
       implicit real*8 (a-h,o-z)
 
@@ -2222,6 +2228,10 @@ c----------------------------------------------------------------------c
           ! ea(iev) = ea(iev+1) = ... = ea(jev-1) = ea(jev)
           ndegen = jev-iev+1;
 
+          if( ndegen .eq. 1 ) then
+            iev = iev + 1;
+            CYCLE;
+          endif
 
           call dsymm( 'L','L', n,ndegen,
      &                 1.d0,   bb(1,1)  ,na,
