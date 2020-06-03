@@ -484,7 +484,7 @@ c======================================================================c
       write(6,*)'* from CPC program library with few modifications:  *';
       write(6,*)'* 1.) The routine iter    is deleted from dirhbt.f  *';
       write(6,*)'* 2.) The routine centmas is deleted from dirhbt.f  *';
-      write(6,*)'* 3.) Output of the routine canon is suppresed      *';
+      write(6,*)'* 3.) Output of the routine canon is suppressed     *';
       write(6,*)'* 4.) Main is deleted from dirhbt.f                 *';
       write(6,*)'* 5.) Ref. BLAS routines are deleted from dirhbt.f  *';
       write(6,*)'* 6.) Some minor bugs in dirhbt.f are fixed         *';
