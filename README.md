@@ -44,5 +44,6 @@ Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-
 Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained parameters <code>betac=0.600</code>, <code>gammac=10.000</code>, <code>cqad=0.010</code> and <code>n0f=18</code> shells.
 
 To reproduce the results of the original code, it took approximately 16.5 minutes.
-For comparison, iteration phase of the original code took 35 hours.
+For comparison, the original code took 35 hours.
+To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095040 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical.
 
