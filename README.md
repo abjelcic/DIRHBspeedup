@@ -36,7 +36,7 @@ Folder <code>OriginalDIRHB</code> contains the origianal [DIRHB code](http://cpc
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the original code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
-Full paper with input parameters description can be found [here](). 
+Full paper with input parameters description can be found [here](https://github.com/abjelcic/DIRHBspeedup/blob/master/papers/DIRHB.pdf). 
 
 ## BENCHMARK - DIRHBT
 Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
