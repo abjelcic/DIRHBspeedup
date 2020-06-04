@@ -1,9 +1,9 @@
 #!/bin/bash
 
-UsedCores=3
+NoSimultaneousTasks=16
 
 export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
-export OPENBLAS_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=2
 
 
 array=(`find . -name "*run"`);
@@ -13,7 +13,7 @@ do
     cd $(dirname $run) && nohup ./run > screen.out && cd .. && cd .. &
 
     background=( $(jobs -p) )
-    if (( ${#background[@]} == UsedCores )); then
+    if (( ${#background[@]} == NoSimultaneousTasks )); then
         wait -n
     fi  
 done
