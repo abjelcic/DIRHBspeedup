@@ -1,0 +1,28 @@
+#Element name
+Pu
+
+#Number of nucleons A
+240
+
+#Parameterset of the Lagrangian (DD-PC1 or DD-ME2)
+DD-PC1
+
+#Number of shells (n0f)
+18
+
+#Number of shells for bosons (n0b)
+20
+
+#Spring constant for constraint (cqad)
+0.010
+
+#Hill-Wheeler beta sweep (beta_start, beta_end, delta_beta)
++0.000
++1.000
++0.200
+
+#Hill-Wheeler gamma sweep (gamma_start, gamma_end, delta_gamma)
++0.000
++30.000
++10.000
+
