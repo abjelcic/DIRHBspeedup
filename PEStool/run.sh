@@ -1,8 +1,10 @@
 #!/bin/bash
 
-cores=3
+UsedCores=3
 
+export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 export OPENBLAS_NUM_THREADS=1
+
 
 array=(`find . -name "*run"`);
 for run in "${array[@]}"
@@ -11,7 +13,7 @@ do
     cd $(dirname $run) && nohup ./run > screen.out && cd .. && cd .. &
 
     background=( $(jobs -p) )
-    if (( ${#background[@]} == cores )); then
+    if (( ${#background[@]} == UsedCores )); then
         wait -n
     fi  
 done
