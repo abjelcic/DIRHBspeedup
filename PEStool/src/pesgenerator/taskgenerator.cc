@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
                 if( !boost::filesystem::exists(dirname) )
                 {
                     boost::filesystem::create_directory(dirname);
-                    boost::filesystem::copy_file( "../dirhbt/run" , dirname + "/run" );
+                    boost::filesystem::copy_file( "../dirhbt/run" , dirname + "/run" + oss.str() );
 
                     auto report = generate_dirhbdat(nucleus, A, n0f, n0b, parameterset,
                                                     beta, gamma, beta, gamma, beta, gamma, cquad,

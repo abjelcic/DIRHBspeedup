@@ -64,7 +64,11 @@ std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
     double beta;
     double gamma;
     double energy;
-
+    
+    bool   betaflag = false;
+    bool  gammaflag = false;
+    bool energyflag = false;
+    
     std::string line;
     while( std::getline(in,line) )
     {
@@ -74,6 +78,7 @@ std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
             double betap;
             line.erase(0, std::string(" beta ................").size() );
             std::stringstream(line) >> betan >> betap >> beta;
+            betaflag = true;
             continue;
         }
         if( line.rfind( " gamma................" , 0 ) == 0 )
@@ -82,16 +87,21 @@ std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
             double gammap;
             line.erase(0, std::string(" gamma................").size() );
             std::stringstream(line) >> gamman >> gammap >> gamma;
+            gammaflag = true;
             continue;
         }
         if( line.rfind( " Total Energy ........" , 0 ) == 0 )
         {
             line.erase(0, std::string(" Total Energy ........").size() );
             std::stringstream(line) >> energy;
+            energyflag = true;
             continue;
         }
     }
-
+    
+    if( betaflag==false || gammaflag==false || energyflag==false )
+        throw std::runtime_error("Error when reading dirhb.out! {beta,gamma,energy} not found!"); 
+    
     return std::tuple<double,double,double>(beta,gamma,energy);
 }
 
