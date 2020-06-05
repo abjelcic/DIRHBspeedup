@@ -57,7 +57,9 @@ To depict the level of agreement: the original code gave -1807.095103 MeV for to
 
 
 ## PES Tool
-Requirements: GNU C++ Compiler (supporting at least C++17 revision of the standard) and [Boost](https://www.boost.org/) library.
+Requirements:
+* GNU C++ Compiler (supporting at least C++17 revision of the standard)
+* [Boost](https://www.boost.org/) library.
 
 For large scale calculation of potential energy surface follow these steps:
 * Navigate to <code>PEStool</code> folder.
