@@ -84,8 +84,9 @@ c---- results
       call plot(.false.);
 
 c---- punching of potentials to tape
-      call inout(2,.false.);
-      call dinout(2,.false.);
+      !no need to waste memory when calculating large-scale PES...  
+      !call inout(2,.false.);
+      !call dinout(2,.false.);
 
       end
 
