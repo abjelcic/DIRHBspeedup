@@ -79,10 +79,11 @@ c---- center-of-mass correction
       write(6,'(a,f10.3,a)')'  Elapsed time(centmass corr.): ',time,'s';
 #endif
 c---- results
-      call resu(.true.);
       !no need to waste memory when calculating large-scale PES...  
+      !call resu(.true.);
       !call plot(.false.);
-
+      call expect(2,.true.);
+      
 c---- punching of potentials to tape
       !no need to waste memory when calculating large-scale PES...  
       !call inout(2,.false.);
