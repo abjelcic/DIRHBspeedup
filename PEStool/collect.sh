@@ -8,3 +8,4 @@ cd ..
 cd ..
 
 rm -rf output
+rm -f status.out
