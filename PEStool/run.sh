@@ -6,7 +6,7 @@ export OPENBLAS_NUM_THREADS=2
 
 export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 
-array=(`find . -name "run*"`);
+array=(`find . -name "*.pes"`);
 for run in "${array[@]}"
 do    
     echo "start --> $(dirname $run)";
