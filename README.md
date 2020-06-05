@@ -34,12 +34,16 @@ Of course, you can use any other BLAS implementation (in that case a slight modi
 minutes (unlike ATLAS).
 
 
+
 ## HOW TO USE
 Folder <code>OriginalDIRHB</code> contains the original [DIRHB code](http://cpc.cs.qub.ac.uk/summaries/AESN_v1_0.html) for reference.
 
 Navigate to <code>ModifiedDIRHB/dirhbz</code> or <code>ModifiedDIRHB/dirhbt</code> directory, enter the input parameters in files <code>dirhb.dat, dirhb.par</code> and type <code>make</code> followed by <code>./run</code>. If you want to use the original code for comparison purpose, type <code>make original</code> followed by <code>./original</code>.
 
 Full paper with input parameters description can be found [here](https://github.com/abjelcic/DIRHBspeedup/blob/master/papers/DIRHB.pdf). 
+
+
+
 
 ## BENCHMARK - DIRHBT
 Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
@@ -49,4 +53,21 @@ Test was performed on heavy deformed <sup>240</sup>Pu nucleus with constrained p
 To reproduce the results of the original code, it took approximately 16.5 minutes.
 For comparison, the original code took 35 hours.
 To depict the level of agreement: the original code gave -1807.095103 MeV for total energy, while the modified code gave -1807.095038 MeV. One usually obtains the agreement within 7-8 most significant digits in total energy, which is for all practical purposes identical when calculating potential energy surfaces (PES).
+
+
+
+## PES Tool
+Requirements: GNU C++ Compiler (supporting at least C++17 revision of the standard) and Boost library.
+
+For large scale calculation of potential energy surface follow these steps:
+* Navigate to <code>PEStool</code> folder.
+* Enter input parameters into <code>pes.dat</code> file (don't distrurb the original format of the file!).
+* Run script: <code>bash compile.sh</code>. It will generate <code>output</code> directories system.
+* Open <code>run.sh</code> script, set <code>NoSimultaneousTasks</code> and <code>OPENBLAS_NUM_THREADS</code> variables.
+* Run script: <code>nohup bash run.sh > status.out &</code>. It will run the code and dump status info in </code>status.out</code>.
+* After the calculation is finished, run script <code>bash collect.sh</code>. It will generate final output file <code>pes.out</code> and do the cleaning.
+
+
+
+
 
