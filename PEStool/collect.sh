@@ -7,5 +7,4 @@ rm -f run
 cd ..
 cd ..
 
-rm -rf output
-rm -f status.out
+

@@ -100,7 +100,7 @@ std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
     }
     
     if( betaflag==false || gammaflag==false || energyflag==false )
-        throw std::runtime_error("Error when reading dirhb.out! {beta,gamma,energy} not found!"); 
+        throw std::runtime_error("{beta,gamma,energy} not found!"); 
     
     return std::tuple<double,double,double>(beta,gamma,energy);
 }
@@ -144,18 +144,26 @@ int main(int argc, char *argv[])
                     std::cerr << "Folder: " << folder << ", doesn't contain dirhb.out file!" << std::endl;
                 else
                 {
-                    auto beta_gamma_energy = read_dirhbout( dirhbout );
-                    double beta   = std::get<0>(beta_gamma_energy);
-                    double gamma  = std::get<1>(beta_gamma_energy);
-                    double energy = std::get<2>(beta_gamma_energy);
-                    dirhbout.close();
+                    try
+                    {
+                        auto beta_gamma_energy = read_dirhbout( dirhbout );
+                        double beta   = std::get<0>(beta_gamma_energy);
+                        double gamma  = std::get<1>(beta_gamma_energy);
+                        double energy = std::get<2>(beta_gamma_energy);
+                        dirhbout.close();
 
-                    // rounding to three digits after decimal point to avoid rounding-error
-                    // troubles when insertion and comparison inside a map
-                    beta   = std::round( beta   * 1000.0 ) / 1000.0;
-                    gamma  = std::round( gamma  * 1000.0 ) / 1000.0;
+                        // rounding to three digits after decimal point to avoid rounding-error
+                        // troubles when insertion and comparison inside a map
+                        beta   = std::round( beta  * 1000.0 ) / 1000.0;
+                        gamma  = std::round( gamma * 1000.0 ) / 1000.0;
 
-                    pestable[ std::pair<double,double>(beta,gamma) ] = energy;
+                        pestable[ std::pair<double,double>(beta,gamma) ] = energy;
+                    }
+                    catch( std::exception const & e )
+                    {
+                        std::cout << "Exception in" << folder + "/dirhb.out" << e.what() << std::endl;
+                    }
+
                 }
 
             }
