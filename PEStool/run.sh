@@ -1,10 +1,10 @@
 #!/bin/bash
 
 NoSimultaneousTasks=16
-
-export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 export OPENBLAS_NUM_THREADS=2
 
+
+export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 
 array=(`find . -name "*run"`);
 for run in "${array[@]}"
