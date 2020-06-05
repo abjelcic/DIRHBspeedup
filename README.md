@@ -61,10 +61,10 @@ Requirements: GNU C++ Compiler (supporting at least C++17 revision of the standa
 
 For large scale calculation of potential energy surface follow these steps:
 * Navigate to <code>PEStool</code> folder.
-* Enter input parameters into <code>pes.dat</code> file (don't distrurb the original format of the file!).
+* Enter input parameters into <code>pes.dat</code> file (don't disturb the original format of the file!).
 * Run script: <code>bash compile.sh</code>. It will generate <code>output</code> directories system.
-* Open <code>run.sh</code> script, set <code>NoSimultaneousTasks</code> and <code>OPENBLAS_NUM_THREADS</code> variables.
-* Run script: <code>nohup bash run.sh > status.out &</code>. It will run the code and dump status info in </code>status.out</code>.
+* Open <code>run.sh</code> script, set <code>NoSimultaneousTasks</code> and <code>OPENBLAS_NUM_THREADS</code> variables. It will set to run at most <code>NoSimultaneousTasks</code> tasks simultaneously with allowing OpenBLAS routines to use <code>OPENBLAS_NUM_THREADS</code> threads.
+* Run script: <code>nohup bash run.sh > status.out &</code>. It will run the code and dump status info into the <code>status.out</code> file.
 * After the calculation is finished, run script <code>bash collect.sh</code>. It will generate final output file <code>pes.out</code> and do the cleaning.
 
 
