@@ -61,7 +61,7 @@ Requirements:
 * GNU C++ Compiler (supporting at least C++17 revision of the standard)
 * [Boost](https://www.boost.org/) library.
 
-For large scale calculation of potential energy surface follow these steps:
+For large scale calculation of potential energy surfaces (PES) follow these steps:
 * Navigate to <code>PEStool</code> folder.
 * Enter input parameters into <code>pes.dat</code> file (don't disturb the original format of the file!).
 * Run script: <code>bash compile.sh</code>. It will generate <code>output</code> directories system.
