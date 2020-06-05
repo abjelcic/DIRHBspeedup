@@ -80,8 +80,8 @@ c---- center-of-mass correction
 #endif
 c---- results
       call resu(.true.);
-
-      call plot(.false.);
+      !no need to waste memory when calculating large-scale PES...  
+      !call plot(.false.);
 
 c---- punching of potentials to tape
       !no need to waste memory when calculating large-scale PES...  
