@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
                     }
                     catch( std::exception const & e )
                     {
-                        std::cout << "Exception in" << folder + "/dirhb.out: " << e.what() << std::endl;
+                        std::cout << "Exception in " << folder + "/dirhb.out: " << e.what() << std::endl;
                     }
 
                 }
