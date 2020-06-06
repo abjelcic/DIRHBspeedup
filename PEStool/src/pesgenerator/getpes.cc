@@ -57,18 +57,17 @@ void writePES( PEStable const & pestable , OSTREAM & out )
     return;
 }
 
-
 template <class ISTREAM>
 std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
 {
     double beta;
     double gamma;
     double energy;
-    
+
     bool   betaflag = false;
     bool  gammaflag = false;
     bool energyflag = false;
-    
+
     std::string line;
     while( std::getline(in,line) )
     {
@@ -98,15 +97,29 @@ std::tuple<double,double,double> read_dirhbout( ISTREAM & in )
             continue;
         }
     }
-    
+
     if( betaflag==false || gammaflag==false || energyflag==false )
-        throw std::runtime_error("{beta,gamma,energy} not found!"); 
-    
+        throw std::runtime_error("{beta,gamma,energy} not found!");
+
     return std::tuple<double,double,double>(beta,gamma,energy);
 }
 
+template <class ISTREAM>
+bool converged_dirhbout( ISTREAM & in )
+{
 
+    std::string line;
+    while( std::getline(in,line) )
+    {
+        if( line.find("interrupted") != std::string::npos )
+            return false;
 
+        if( line.find("converged") != std::string::npos )
+            return true;
+    }
+
+    throw std::runtime_error("converge nor interrupt!");
+}
 
 
 int main(int argc, char *argv[])
@@ -146,6 +159,9 @@ int main(int argc, char *argv[])
                 {
                     try
                     {
+                        if( converged_dirhbout( dirhbout ) == false )
+                            throw std::runtime_error("convergence failed!");
+
                         auto beta_gamma_energy = read_dirhbout( dirhbout );
                         double beta   = std::get<0>(beta_gamma_energy);
                         double gamma  = std::get<1>(beta_gamma_energy);
@@ -154,14 +170,14 @@ int main(int argc, char *argv[])
 
                         // rounding to three digits after decimal point to avoid rounding-error
                         // troubles when insertion and comparison inside a map
-                        beta   = std::round( beta  * 1000.0 ) / 1000.0;
-                        gamma  = std::round( gamma * 1000.0 ) / 1000.0;
+                        beta  = std::round( beta  * 1000.0 ) / 1000.0;
+                        gamma = std::round( gamma * 1000.0 ) / 1000.0;
 
                         pestable[ std::pair<double,double>(beta,gamma) ] = energy;
                     }
                     catch( std::exception const & e )
                     {
-                        std::cout << "Exception in" << folder + "/dirhb.out" << e.what() << std::endl;
+                        std::cout << "Exception in" << folder + "/dirhb.out: " << e.what() << std::endl;
                     }
 
                 }
