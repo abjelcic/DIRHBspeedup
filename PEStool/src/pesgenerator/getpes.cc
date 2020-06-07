@@ -118,7 +118,7 @@ bool converged_dirhbout( ISTREAM & in )
             return true;
     }
 
-    throw std::runtime_error("converge nor interrupt!");
+    throw std::runtime_error("neither converged nor interrupted!");
 }
 
 
