@@ -1,5 +1,6 @@
 #!/bin/bash
 
 rm -rf ./output
-rm -rf status.out
+rm -r status.out
+rm -f pes.out
 
