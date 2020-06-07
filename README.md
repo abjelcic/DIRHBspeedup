@@ -68,7 +68,7 @@ For large scale calculation of potential energy surfaces (PES) follow these step
 * Open <code>run.sh</code> script, set <code>NoSimultaneousTasks</code> and <code>OPENBLAS_NUM_THREADS</code> variables. It will allow at most <code>NoSimultaneousTasks</code> tasks to run simultaneously with allowing OpenBLAS routines to use <code>OPENBLAS_NUM_THREADS</code> threads.
 * Run script: <code>nohup bash run.sh > status.out &</code>. It will run the code and dump status info into the <code>status.out</code> file.
 * After the calculation is finished, run script <code>bash collect.sh</code>. It will generate (or append to) the final output file <code>pes.out</code>.
-* One can use <code>bash clean.sh</code> to do the cleaning and <code>bash killpes.sh</code> to abort all generated tasks if necessary.
+* One can use <code>bash clean.sh</code> to do the cleaning (careful, <code>output</code> folder together with the <code>pes.out</code> file will be deleted, potentially losing all calculations so far) and <code>bash killpes.sh</code> to abort all generated tasks if necessary.
 
 
 
