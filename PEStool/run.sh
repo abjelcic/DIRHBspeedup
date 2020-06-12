@@ -1,11 +1,15 @@
 #!/bin/bash
 
+
 NoSimultaneousTasks=4
 export OPENBLAS_NUM_THREADS=1
 
 
-export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 
+
+
+#Some systems require exporting path to OpenBLAS before running
+export LD_LIBRARY_PATH=/opt/OpenBLAS/lib/
 
 
 
