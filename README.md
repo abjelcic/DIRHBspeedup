@@ -2,6 +2,8 @@
 Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/kontakt.html) and 
 [Z. Drmac](https://web.math.pmf.unizg.hr/~drmac/).
 
+
+
 ## DIRHB
 This code is a small modification of the original [DIRHB](https://www.sciencedirect.com/science/article/pii/S0010465514000836) code.
 
@@ -44,7 +46,6 @@ Full paper with input parameters description can be found [here](https://github.
 
 
 
-
 ## BENCHMARK - DIRHBT
 Benchmark was done on Intel® NUC Kit NUC8i7HVK machine with OpenBLAS on single-thread.
 
@@ -69,8 +70,5 @@ For large scale calculation of potential energy surfaces (PES) follow these step
 * Run script: <code>nohup bash run.sh > status.out &</code>. It will run the code and dump status info into the <code>status.out</code> file.
 * After the calculation is finished, run script <code>bash collect.sh</code>. It will generate (or append to) the final output file <code>pes.out</code>.
 * One can use <code>bash clean.sh</code> to do the cleaning (careful, <code>output</code> folder together with the <code>pes.out</code> file will be deleted, potentially losing all calculations so far) and <code>bash killpes.sh</code> to abort all generated tasks if necessary.
-
-
-
 
 
