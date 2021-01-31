@@ -829,7 +829,7 @@ c======================================================================c
                   call assert(ndegen.le.DEGENBLOCK,'DEGENBLOCK small');
                   ndegenmax = max( ndegenmax , ndegen );
 
-                  ! eij (can be extracted even more efficient)
+                  ! eij (can be extracted more efficiently - dsyr2k)
                   call dgemm( 'T','N', ndegen,ndegen,nf,
      &                        +1.d+0,      Q1(1,i),NBLOCK,
      &                                DeltaQ2(1,i),NBLOCK,
@@ -848,7 +848,7 @@ c======================================================================c
      &                                    hQ2(1,i),NBLOCK,
      &                        +1.d+0,     eij(1,1),DEGENBLOCK );
 
-                  ! dij (can be extracted even more efficient)
+                  ! dij (can be extracted more efficiently - dsyr2k)
                   call dgemm( 'T','N', ndegen,ndegen,nf,
      &                        +1.d+0,      Q1(1,i),NBLOCK,
      &                                    hQ2(1,i),NBLOCK,
