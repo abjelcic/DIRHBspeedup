@@ -1,6 +1,6 @@
 # DIRHBspeedup
 Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/kontakt.html),
-T. Nikšič
+T. Nikšić
 and 
 [Z. Drmac](https://web.math.pmf.unizg.hr/~drmac/).
 
