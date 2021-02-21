@@ -1,5 +1,7 @@
 # DIRHBspeedup
-Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/kontakt.html) and 
+Authors: [A. Bjelcic](http://web.studenti.math.pmf.unizg.hr/~abjelcic/stranica/kontakt.html),
+T. Nikšič
+and 
 [Z. Drmac](https://web.math.pmf.unizg.hr/~drmac/).
 
 
