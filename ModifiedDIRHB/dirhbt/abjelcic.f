@@ -88,8 +88,8 @@ c---- punching of potentials to tape
       call dinout(2,.false.);
 
 c-----inertia parameters (B1,B2,B3, Bbb,Bbg,Bgg)
-      call inertia_abjelcic( .true. );
-     !call inertia( .true. );
+!     call inertia_abjelcic( .true. );
+!     call inertia( .true. );
 
       end
 

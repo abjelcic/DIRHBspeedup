@@ -13,7 +13,7 @@ c---- maximal number of (k,parity)-blocks
       parameter (    nbx =        2 )
 c
 c---- maximal oscillator quantum number for large components
-      parameter (   n0fx = 18 )
+      parameter (   n0fx = 20 )
       parameter (   kmaxp= n0fx/2  )
       parameter (   n0fp = (kmaxp+1)*(kmaxp+2)*(4*kmaxp+3)/6)
 
@@ -46,7 +46,7 @@ c---- maximal dimension for boson-matrix
 c
 c
 c---- maximal n for Hermite polynomials
-      parameter (   nmax =        20 )
+      parameter (   nmax =        22 )
 c
 c-----------------------------------------------------------------------
 c
