@@ -87,6 +87,10 @@ c---- punching of potentials to tape
       call inout(2,.false.);
       call dinout(2,.false.);
 
+c-----inertia parameters (B1,B2,B3, Bbb,Bbg,Bgg)
+      call inertia_abjelcic( .true. );
+     !call inertia( .true. );
+
       end
 
 
@@ -478,7 +482,7 @@ c======================================================================c
 
       write(6,*);
       write(6,*)'*****************************************************';
-      write(6,*)'* Speedup by A.Bjelcic & Z.Drmac                    *';
+      write(6,*)'* Speedup by A.Bjelcic, T.Niksic and Z.Drmac        *';
       write(6,*)'*                                                   *';
       write(6,*)'* This is the original DIRHBT code (2014) directly  *';
       write(6,*)'* from CPC program library with few modifications:  *';
@@ -2267,6 +2271,1983 @@ c----------------------------------------------------------------------c
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+c======================================================================c
+
+      subroutine inertia_abjelcic( lpr )
+
+c======================================================================c
+c                                                                      c
+c     Calculates inertia (B1,B2,B3) and mass parameters (Bbb,Bbg,Bgg)  c
+c                                                                      c
+c----------------------------------------------------------------------c
+      implicit double precision(a-h,o-z)
+
+      include 'dirhb.par'
+      logical lpr;
+
+      character tb*5                  ! blokap
+      character tt*8                  ! bloqua
+      character tp*1,tis*1,tit*8,tl*1 ! textex
+
+      common /blokap/ nb,mu(nbx),tb(nbx)
+      common /nucnuc/ amas,nama,npr(2),nucnam
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /baspar/ hom,hb0,b0
+      common /blolev/ nk(4),ibk(nkx,4),tk(nkx,4)
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+      common /erwar / ea,rms,betg,gamg
+      common /fermi / ala(2),tz(2)
+      common /textex/ tp(2),tis(2),tit(2),tl(0:30)
+      common /eeecan/ eecan(nkx,4),decan(nkx,4),vvcan(nkx,4),
+     &                fgcan(nhx,nkx,4),mulcan(nkx,4),akacan(nkx,4)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
+
+      ! new common blocks
+      ! etrrqq block is weird, it does not appear in dirhbt code at all
+      common /etrrqq/ etot,rr2,q0p,q2p
+      common /jexcan/ ajxcan(nkx,2),ajycan(nkx,2),ajzcan(nkx,2)
+
+
+
+      ! local memory
+      double precision, dimension(:,:,:,:), allocatable :: qxx;
+      double precision, dimension(:,:,:,:), allocatable :: qyy;
+      double precision, dimension(:,:,:,:), allocatable :: qzz;
+      double precision, dimension(:,:,:,:), allocatable :: qxy;
+      double precision, dimension(:,:,:,:), allocatable :: qxz;
+      double precision, dimension(:,:,:,:), allocatable :: qyz;
+
+      double precision, dimension(:,:,:,:), allocatable :: ajx;
+      double precision, dimension(:,:,:,:), allocatable :: ajy;
+      double precision, dimension(:,:,:,:), allocatable :: ajz;
+
+      double precision, dimension(:),       allocatable :: vt;
+      double precision, dimension(:),       allocatable :: ut;
+      double precision, dimension(:),       allocatable :: ek;
+      double precision, dimension(:),       allocatable :: eqp;
+      integer,          dimension(:),       allocatable :: kk;
+
+      double precision, dimension(:,:),     allocatable :: qq0;
+      double precision, dimension(:,:),     allocatable :: qq2;
+      double precision, dimension(:,:),     allocatable :: qqx;
+      double precision, dimension(:,:),     allocatable :: qqy;
+      double precision, dimension(:,:),     allocatable :: qqz;
+      double precision, dimension(:,:),     allocatable :: ajjx;
+      double precision, dimension(:,:),     allocatable :: ajjy;
+      double precision, dimension(:,:),     allocatable :: ajjz;
+
+      double precision, dimension(:,:),     allocatable :: s1;
+      double precision, dimension(:,:),     allocatable :: s2;
+      double precision, dimension(:,:),     allocatable :: s3;
+      double precision, dimension(:,:),     allocatable :: ss1;
+      double precision, dimension(:,:),     allocatable :: ss2;
+      double precision, dimension(:,:),     allocatable :: ss3;
+      double precision, dimension(:,:),     allocatable :: sp1;
+      double precision, dimension(:,:),     allocatable :: sn1;
+      double precision, dimension(:,:),     allocatable :: sn2;
+
+      double precision, dimension(:),       allocatable :: BB1;
+      double precision, dimension(:),       allocatable :: BB2;
+      double precision, dimension(:),       allocatable :: BB3;
+
+      logical lx0,ly0,lz0, lx1,ly1,lz1, lx2,ly2,lz2;
+      double precision M1(2,2);
+      double precision M3(2,2);
+      double precision invM1_M3_invM1(2,2);
+
+
+
+
+
+
+
+
+
+
+      if(lpr) then
+      write(l6,*) ' ****** BEGIN INERTIA *****************************';
+      endif
+
+
+
+
+
+
+
+
+
+
+      ! constant factors
+      pi = 4.d0 * DATAN(1.d0);
+
+      fac0 = DSQRT(  5.d0/(16.d0*pi) ); !Q20
+      fac2 = DSQRT( 15.d0/(16.d0*pi) ); !sqrt(2)*Q22
+      fact = hom**2;
+      facm = 9.d0*2.0736d0 * (amas**(10.d0/3.d0)) / (16.d0*pi*pi*b0**4);
+
+      sxx = ( 1.d0/DSQRT(2.d0) * bx )**2;
+      syy = ( 1.d0/DSQRT(2.d0) * by )**2;
+      szz = ( 1.d0/DSQRT(2.d0) * bz )**2;
+      sx  = ( 1.d0/DSQRT(2.d0) * bx );
+      sy  = ( 1.d0/DSQRT(2.d0) * by );
+      sz  = ( 1.d0/DSQRT(2.d0) * bz );
+
+
+
+
+
+
+
+
+
+
+      ! allocation and initialization of local memory
+      allocate( BB1(3) ); BB1 = 0.d0;
+      allocate( BB2(3) ); BB2 = 0.d0;
+      allocate( BB3(3) ); BB3 = 0.d0;
+
+
+      nalloc = 0;
+      do ib = 1 , nb
+          do ifg = 1 , 2
+              nalloc = max( nalloc , id(ib,ifg) );
+          enddo
+      enddo
+      allocate( qxx( nalloc , nalloc , 2 , nb ) ); qxx = 0.d0;
+      allocate( qyy( nalloc , nalloc , 2 , nb ) ); qyy = 0.d0;
+      allocate( qzz( nalloc , nalloc , 2 , nb ) ); qzz = 0.d0;
+
+      allocate( qxy( nalloc , nalloc , 2 , nb ) ); qxy = 0.d0;
+      allocate( qxz( nalloc , nalloc , 2 , nb ) ); qxz = 0.d0;
+      allocate( qyz( nalloc , nalloc , 2 , nb ) ); qyz = 0.d0;
+
+      allocate( ajx( nalloc , nalloc , 2 , nb ) ); ajx = 0.d0;
+      allocate( ajy( nalloc , nalloc , 2 , nb ) ); ajy = 0.d0;
+      allocate( ajz( nalloc , nalloc , 2 , nb ) ); ajz = 0.d0;
+
+
+      kalloc = 0;
+      do it = 1 , 2
+          kalloc = max( kalloc , nkcan(it) );
+      enddo
+      allocate(   vt( kalloc          ) ); vt   = 0.d0;
+      allocate(   ut( kalloc          ) ); ut   = 0.d0;
+      allocate(   ek( kalloc          ) ); ek   = 0.d0;
+      allocate(  eqp( kalloc          ) ); eqp  = 0.d0;
+      allocate(   kk( kalloc          ) ); kk   = 0;
+
+      allocate(  qq0( kalloc , kalloc ) ); qq0  = 0.d0;
+      allocate(  qq2( kalloc , kalloc ) ); qq2  = 0.d0;
+      allocate(  qqx( kalloc , kalloc ) ); qqx  = 0.d0;
+      allocate(  qqy( kalloc , kalloc ) ); qqy  = 0.d0;
+      allocate(  qqz( kalloc , kalloc ) ); qqz  = 0.d0;
+      allocate( ajjx( kalloc , kalloc ) ); ajjx = 0.d0;
+      allocate( ajjy( kalloc , kalloc ) ); ajjy = 0.d0;
+      allocate( ajjz( kalloc , kalloc ) ); ajjz = 0.d0;
+
+
+      nkalloc = 0;
+      do it = 1 , 2
+          do ib = 1 , nb
+              nkalloc = max( nkalloc , kdcan(ib,it) );
+          enddo
+      enddo
+      allocate(  s1( nkalloc , nkalloc ) ); s1  = 0.d0;
+      allocate(  s2( nkalloc , nkalloc ) ); s2  = 0.d0;
+      allocate(  s3( nkalloc , nkalloc ) ); s3  = 0.d0;
+      allocate( ss1( nkalloc , nkalloc ) ); ss1 = 0.d0;
+      allocate( ss2( nkalloc , nkalloc ) ); ss2 = 0.d0;
+      allocate( ss3( nkalloc , nkalloc ) ); ss3 = 0.d0;
+      allocate( sp1( nkalloc , nkalloc ) ); sp1 = 0.d0;
+      allocate( sn1( nkalloc , nkalloc ) ); sn1 = 0.d0;
+      allocate( sn2( nkalloc , nkalloc ) ); sn2 = 0.d0;
+
+
+      aM001 = 0.d0;
+      aM021 = 0.d0;
+      aM221 = 0.d0;
+      aM002 = 0.d0;
+      aM022 = 0.d0;
+      aM222 = 0.d0;
+      aM003 = 0.d0;
+      aM023 = 0.d0;
+      aM223 = 0.d0;
+      aMp12 = 0.d0;
+      aMn12 = 0.d0;
+      aMn22 = 0.d0;
+      aMp13 = 0.d0;
+      aMn13 = 0.d0;
+      aMn23 = 0.d0;
+
+
+
+
+
+
+
+
+
+
+      ! calculating qxx, qyy, qzz, qxy, qxz, qyz
+      qxx = 0.d0;
+      qyy = 0.d0;
+      qzz = 0.d0;
+      qxy = 0.d0;
+      qxz = 0.d0;
+      qyz = 0.d0;
+      do ib = 1 , nb
+          do ifg = 1 , 2
+
+              do n2 = 1 , id(ib,ifg)
+                  nx2  = nxyz(ia(ib,ifg)+n2,1);
+                  ny2  = nxyz(ia(ib,ifg)+n2,2);
+                  nz2  = nxyz(ia(ib,ifg)+n2,3);
+                  Nsh2 = nx2 + ny2 + nz2;
+
+                  do n1 = n2 , id(ib,ifg)
+                      nx1  = nxyz(ia(ib,ifg)+n1,1);
+                      ny1  = nxyz(ia(ib,ifg)+n1,2);
+                      nz1  = nxyz(ia(ib,ifg)+n1,3);
+                      Nsh1 = nx1 + ny1 + nz1;
+
+                      if( n1 .eq. n2 ) then
+                          qxx(n1,n1,ifg,ib) = (2.d0*DBLE(nx1)+1.d0)*sxx;
+                          qyy(n1,n1,ifg,ib) = (2.d0*DBLE(ny1)+1.d0)*syy;
+                          qzz(n1,n1,ifg,ib) = (2.d0*DBLE(nz1)+1.d0)*szz;
+                          CYCLE;
+                      endif
+
+                      if( abs( Nsh1 - Nsh2 ) .gt. 2 ) CYCLE;
+
+                      lx0 = abs(nx1-nx2) .eq. 0;
+                      ly0 = abs(ny1-ny2) .eq. 0;
+                      lz0 = abs(nz1-nz2) .eq. 0;
+                      lx1 = abs(nx1-nx2) .eq. 1;
+                      ly1 = abs(ny1-ny2) .eq. 1;
+                      lz1 = abs(nz1-nz2) .eq. 1;
+                      lx2 = abs(nx1-nx2) .eq. 2;
+                      ly2 = abs(ny1-ny2) .eq. 2;
+                      lz2 = abs(nz1-nz2) .eq. 2;
+
+                      if( lx2 .and. ly0 .and. lz0 ) then
+                          txx = + sxx;
+                          txx = txx * DSQRT( DBLE( MIN(nx1,nx2)+1 ) );
+                          txx = txx * DSQRT( DBLE( MAX(nx1,nx2)   ) );
+
+                          qxx(n1,n2,ifg,ib) = txx;
+                      endif
+
+                      if( lx0 .and. ly2 .and. lz0 ) then
+                          tyy = - syy;
+                          tyy = tyy * DSQRT( DBLE( MIN(ny1,ny2)+1 ) );
+                          tyy = tyy * DSQRT( DBLE( MAX(ny1,ny2)   ) );
+
+                          qyy(n1,n2,ifg,ib) = tyy;
+                      endif
+
+                      if( lx0 .and. ly0 .and. lz2 ) then
+                          tzz = + szz;
+                          tzz = tzz * DSQRT( DBLE( MIN(nz1,nz2)+1 ) );
+                          tzz = tzz * DSQRT( DBLE( MAX(nz1,nz2)   ) );
+
+                          qzz(n1,n2,ifg,ib) = tzz;
+                      endif
+
+                      if( lx1 .and. ly1 .and. lz0 ) then
+                          txy = (-1)**(nx2+ny2+1) * sx * sy;
+                          txy = txy * DSQRT( DBLE( MAX(nx1,nx2) ) );
+                          txy = txy * DSQRT( DBLE( MAX(ny1,ny2) ) );
+                          if( ny1-ny2 .eq. -1 ) txy = -1.d0 * txy;
+
+                          qxy(n1,n2,ifg,ib) = txy;
+                      endif
+
+                      if( lx1 .and. ly0 .and. lz1 ) then
+                          txz = (-1)**(ifg-1+nx2+ny2+1) * sx * sz;
+                          txz = txz * DSQRT( DBLE( MAX(nx1,nx2) ) );
+                          txz = txz * DSQRT( DBLE( MAX(nz1,nz2) ) );
+
+                          qxz(n1,n2,ifg,ib) = txz;
+                      endif
+
+                      if( lx0 .and. ly1 .and. lz1 ) then
+                          tyz = (-1)**(ifg-1) * sy * sz;
+                          tyz = tyz * DSQRT( DBLE( MAX(ny1,ny2) ) );
+                          tyz = tyz * DSQRT( DBLE( MAX(nz1,nz2) ) );
+                          if( ny1-ny2 .eq. -1 ) tyz = -1.d0 * tyz;
+
+                          qyz(n1,n2,ifg,ib) = tyz;
+                      endif
+
+                  enddo
+              enddo
+
+              ! upper triangle
+              do n2 = 1 , id(ib,ifg)
+                  do n1 = 1 , n2-1
+                      qxx(n1,n2,ifg,ib) = + qxx(n2,n1,ifg,ib);
+                      qyy(n1,n2,ifg,ib) = + qyy(n2,n1,ifg,ib);
+                      qzz(n1,n2,ifg,ib) = + qzz(n2,n1,ifg,ib);
+                      qxy(n1,n2,ifg,ib) = - qxy(n2,n1,ifg,ib);
+                      qxz(n1,n2,ifg,ib) = - qxz(n2,n1,ifg,ib);
+                      qyz(n1,n2,ifg,ib) = - qyz(n2,n1,ifg,ib);
+                  enddo
+              enddo
+
+          enddo
+      enddo
+
+      ! calculating ajx, ajy, ajz
+      ajx = 0.d0;
+      ajy = 0.d0;
+      ajz = 0.d0;
+      do ib = 1 , nb
+          do ifg = 1 , 2
+
+              do n2 = 1 , id(ib,ifg)
+                  nx2  = nxyz(ia(ib,ifg)+n2,1);
+                  ny2  = nxyz(ia(ib,ifg)+n2,2);
+                  nz2  = nxyz(ia(ib,ifg)+n2,3);
+
+                  do n1 = n2 , id(ib,ifg)
+                      nx1  = nxyz(ia(ib,ifg)+n1,1);
+                      ny1  = nxyz(ia(ib,ifg)+n1,2);
+                      nz1  = nxyz(ia(ib,ifg)+n1,3);
+
+                      if( n1 .eq. n2 ) then
+                          ajx(n1,n1,ifg,ib) = 0.5d0 * (-1)**(nx1+1);
+                          ajy(n1,n1,ifg,ib) = 0.5d0 * (-1)**(ny1+1);
+                          ajz(n1,n1,ifg,ib) = 0.5d0 * (-1)**(nx1+ny1+1);
+                          CYCLE;
+                      endif
+
+                      lx0 = abs(nx1-nx2) .eq. 0;
+                      ly0 = abs(ny1-ny2) .eq. 0;
+                      lz0 = abs(nz1-nz2) .eq. 0;
+                      lx1 = abs(nx1-nx2) .eq. 1;
+                      ly1 = abs(ny1-ny2) .eq. 1;
+                      lz1 = abs(nz1-nz2) .eq. 1;
+
+                      if( lx0 .and. ly1 .and. lz1 ) then
+                          s = + 1.d0;
+                          s = s * DSQRT( DBLE( MAX(ny1,ny2) ) );
+                          s = s * DSQRT( DBLE( MAX(nz1,nz2) ) );
+
+                          sum = 0.5d0 * ( by/bz + bz/by );
+                          dif = 0.5d0 * ( by/bz - bz/by );
+                          if( nz2.eq.nz1+1 .and. ny2.eq.ny1+1 ) then
+                              s = + dif * s;
+                          endif
+                          if( nz2.eq.nz1-1 .and. ny2.eq.ny1-1 ) then
+                              s = + dif * s;
+                          endif
+                          if( nz2.eq.nz1+1 .and. ny2.eq.ny1-1 ) then
+                              s = - sum * s;
+                          endif
+                          if( nz2.eq.nz1-1 .and. ny2.eq.ny1+1 ) then
+                              s = - sum * s;
+                          endif
+
+
+                          ajx(n1,n2,ifg,ib) = s;
+                      endif
+
+                      if( lx1 .and. ly0 .and. lz1 ) then
+                          s = + 1.d0;
+                          s = s * DSQRT( DBLE( MAX(nx1,nx2) ) );
+                          s = s * DSQRT( DBLE( MAX(nz1,nz2) ) );
+
+                          sum = 0.5d0 * ( bz/bx + bx/bz );
+                          dif = 0.5d0 * ( bz/bx - bx/bz );
+                          if( nx2.eq.nx1+1 .and. nz2.eq.nz1+1 ) then
+                              s = + dif * s;
+                          endif
+                          if( nx2.eq.nx1-1 .and. nz2.eq.nz1-1 ) then
+                              s = - dif * s;
+                          endif
+                          if( nx2.eq.nx1+1 .and. nz2.eq.nz1-1 ) then
+                              s = + sum * s;
+                          endif
+                          if( nx2.eq.nx1-1 .and. nz2.eq.nz1+1 ) then
+                              s = - sum * s;
+                          endif
+
+
+                          ajy(n1,n2,ifg,ib) = (-1)**(nx2+ny2+1) * s;
+                      endif
+
+                      if( lx1 .and. ly1 .and. lz0 ) then
+                          s = + 1.d0;
+                          s = s * DSQRT( DBLE( MAX(nx1,nx2) ) );
+                          s = s * DSQRT( DBLE( MAX(ny1,ny2) ) );
+
+                          sum = 0.5d0 * ( bx/by + by/bx );
+                          dif = 0.5d0 * ( bx/by - by/bx );
+                          if( nx2.eq.nx1+1 .and. ny2.eq.ny1+1 ) then
+                              s = + dif * s;
+                          endif
+                          if( nx2.eq.nx1-1 .and. ny2.eq.ny1-1 ) then
+                              s = + dif * s;
+                          endif
+                          if( nx2.eq.nx1+1 .and. ny2.eq.ny1-1 ) then
+                              s = + sum * s;
+                          endif
+                          if( nx2.eq.nx1-1 .and. ny2.eq.ny1+1 ) then
+                              s = + sum * s;
+                          endif
+
+
+                          ajz(n1,n2,ifg,ib) = (-1)**(nx2+ny2+1) * s;
+                      endif
+
+                  enddo
+              enddo
+
+              ! upper triangle
+              do n2 = 1 , id(ib,ifg)
+                  do n1 = 1 , n2-1
+                      ajx(n1,n2,ifg,ib) = + ajx(n2,n1,ifg,ib);
+                      ajy(n1,n2,ifg,ib) = + ajy(n2,n1,ifg,ib);
+                      ajz(n1,n2,ifg,ib) = + ajz(n2,n1,ifg,ib);
+                  enddo
+              enddo
+
+          enddo
+      enddo
+
+
+
+
+
+
+
+
+
+
+      ! calculating
+      ! BB1   , BB2   , BB3   ,
+      ! aM003 , aM223 , aM023 ,
+      ! aM002 , aM222 , aM022 ,
+      ! aM001 , aM221 , aM021 ,
+      ! aMp13 , aMn13 , aMn23 ,
+      ! aMp12 , aMn12 , aMn22
+      do it = 1 , 2
+
+
+          ! calculating non-used arrays because the original code does
+          km = 0;
+          do k = 1 , nkcan(it)
+              lam = ala(it);
+
+              vt(k)  = DSQRT( ABS(     vvcan(k,it)) );
+              ut(k)  = DSQRT( ABS(1.d0-vvcan(k,it)) );
+              ek(k)  = eecan(k,it);
+              eqp(k) = DSQRT( (eecan(k,it)-lam)**2 + decan(k,it)**2 );
+
+              km     = km + 1;
+              kk(km) = k;
+
+              call assert( k.le.NKX , 'NKX too small' );
+          enddo
+          do ib = 1 , nb
+              do k = kacan(ib,it)+1 , kacan(ib,it)+kdcan(ib,it)
+                  call assert( ib .eq. ibk(k,it) , 'ibk(k,it) wrong' );
+              enddo
+          enddo
+
+
+
+          ! calculating qq0, qq2, qqx, qqy, qqz, ajjx, ajjy, ajjz
+          qq0  = 0.d0;
+          qq2  = 0.d0;
+          qqx  = 0.d0;
+          qqy  = 0.d0;
+          qqz  = 0.d0;
+          ajjx = 0.d0;
+          ajjy = 0.d0;
+          ajjz = 0.d0;
+          do ib = 1 , nb
+              k1 = kacan(ib,it)+1;
+              k2 = kacan(ib,it)+kdcan(ib,it);
+              kd = kdcan(ib,it);
+              nf = id(ib,1);
+
+              s1  = 0.d0;
+              s2  = 0.d0;
+              s3  = 0.d0;
+              ss1 = 0.d0;
+              ss2 = 0.d0;
+              ss3 = 0.d0;
+              sp1 = 0.d0;
+              sn1 = 0.d0;
+              sn2 = 0.d0;
+              do ifg = 1 , 2
+                  nd = id(ib,ifg);
+
+                  ! Performs C = C + alpha * U^T*A*U transformation of (anti)symmetric A
+                  !
+                  ! U = fgcan( (ifg-1)*nf + 1...(ifg-1)*nf + nd , k1...k2 , it )
+                  !
+                  ! (symmetric A)
+                  ! A = qxx( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C =  s1( 1...kd , 1...kd )
+                  ! A = qyy( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C =  s2( 1...kd , 1...kd )
+                  ! A = qzz( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C =  s3( 1...kd , 1...kd )
+                  ! A = ajx( 1...nd , 1...nd , ifg , ib ), alpha = (-1)^(ifg+1), C = ss1( 1...kd , 1...kd )
+                  ! A = ajy( 1...nd , 1...nd , ifg , ib ), alpha = (-1)^(ifg+1), C = ss2( 1...kd , 1...kd )
+                  ! A = ajz( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C = ss3( 1...kd , 1...kd )
+                  !
+                  ! (anti-symmetric A)
+                  ! A = qyz( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C = sp1( 1...kd , 1...kd )
+                  ! A = qxz( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C = sn1( 1...kd , 1...kd )
+                  ! A = qxy( 1...nd , 1...nd , ifg , ib ), alpha = 1.0         , C = sn2( 1...kd , 1...kd )
+
+
+                  ! s1
+                  call  symmUtAU( nd , kd , 1.d0                     ,
+     &                            qxx(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            s1(1,1)                   , nkalloc );
+                  ! s2
+                  call  symmUtAU( nd , kd , 1.d0                     ,
+     &                            qyy(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            s2(1,1)                   , nkalloc );
+                  ! s3
+                  call  symmUtAU( nd , kd , 1.d0                     ,
+     &                            qzz(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            s3(1,1)                   , nkalloc );
+                  ! ss1
+                  call  symmUtAU( nd , kd , DBLE((-1)**(ifg+1))      ,
+     &                            ajx(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            ss1(1,1)                  , nkalloc );
+                  ! ss2
+                  call  symmUtAU( nd , kd , DBLE((-1)**(ifg+1))      ,
+     &                            ajy(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            ss2(1,1)                  , nkalloc );
+                  ! ss3
+                  call  symmUtAU( nd , kd , 1.d0                     ,
+     &                            ajz(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            ss3(1,1)                  , nkalloc );
+
+
+                  ! sp1
+                  call asymmUtAU( nd , kd , 1.d0                     ,
+     &                            qyz(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            sp1(1,1)                  , nkalloc );
+                  ! sn1
+                  call asymmUtAU( nd , kd , 1.d0                     ,
+     &                            qxz(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            sn1(1,1)                  , nkalloc );
+                  ! sn2
+                  call asymmUtAU( nd , kd , 1.d0                     ,
+     &                            qxy(1,1,ifg,ib)           , nalloc ,
+     &                            fgcan((ifg-1)*nf+1,k1,it) , NHX    ,
+     &                            sn2(1,1)                  , nkalloc );
+
+              enddo
+
+
+
+              do j = 1 , kd
+                  do i = 1 , kd
+
+                  ki = k1 + (i-1);
+                  kj = k1 + (j-1);
+
+                   qq0(ki,kj) = fac0 * ( 2.d0*s3(i,j)-s1(i,j)-s2(i,j) );
+                   qq2(ki,kj) = fac2 * ( s1(i,j)-s2(i,j) );
+                   qqx(ki,kj) = 2.d0 * sp1(i,j);
+                   qqy(ki,kj) = 2.d0 * sn1(i,j);
+                   qqz(ki,kj) = 2.d0 * sn2(i,j);
+                  ajjx(ki,kj) = ss1(i,j);
+                  ajjy(ki,kj) = ss2(i,j);
+                  ajjz(ki,kj) = ss3(i,j);
+
+                  ! In the original code, one encounters the following:
+                  !
+                  ! qqx(k1,k2) = 2.*sp1
+                  ! qqx(k2,k1) = 2.*sp1
+                  ! qqy(k1,k2) = 2.*sn1
+                  ! qqy(k2,k1) = 2.*sn1
+                  ! qqz(k1,k2) = 2.*sn2
+                  ! qqz(k2,k1) = 2.*sn2
+                  !
+                  ! where sp1,sn1,sn2 are obtained with:
+                  !
+                  ! sp1 = sp1 + fgt*qyz(n1,n2,ifg,ib1)
+                  ! sn1 = sn1 + fgt*qxz(n1,n2,ifg,ib1)
+                  ! sn2 = sn2 + fgt*qxy(n1,n2,ifg,ib1)
+                  !
+                  ! Since qxy,qxz,qyz are anti-symmetric matrices,
+                  ! sp1,sn1,sn2 matrices are also anti-symmetric, and
+                  ! thus qqx,qqy,qqz are also anti-symmetric.
+                  ! In the original code, one loops over
+                  ! only the lower triangle of (k1,k2) pairs, and in
+                  ! the end symmetrizes matrices qqx,qqy,qqz.
+                  ! However, this presents no problem, since qqx,qqy,qqz
+                  ! matrices are used only in the squared form:
+                  !
+                  ! aMp13 = aMp13 + tuve3*qqx(k1,k2)**2
+                  ! aMn13 = aMn13 + tuve3*qqy(k1,k2)**2
+                  ! aMn23 = aMn23 + tuve3*qqz(k1,k2)**2
+
+                  ! aMp12 = aMp12 + tuve2*qqx(k1,k2)**2
+                  ! aMn12 = aMn12 + tuve2*qqy(k1,k2)**2
+                  ! aMn22 = aMn22 + tuve2*qqz(k1,k2)**2
+                  !
+                  ! and thus, I won't symmetrize matrices qqx,qqy,qqz.
+
+
+                  enddo
+              enddo
+              call assert( k1+kd-1 .le. kalloc , 'kalloc too small' );
+
+              do i = 1 , kd
+                  ki = k1 + (i-1);
+                  ajxcan( ki , it ) = ajjx( ki , ki );
+                  ajycan( ki , it ) = ajjy( ki , ki );
+                  ajzcan( ki , it ) = ajjz( ki , ki );
+              enddo
+              call assert( k1+kd-1 .le. NKX , 'NKX too small' );
+
+
+          enddo
+
+
+
+
+          do ib = 1 , nb
+              do k2 = kacan(ib,it)+1 , kacan(ib,it)+kdcan(ib,it)
+                  call assert(vvcan(k2,it).ge.0.d0,'vk^2 < 0');
+                  call assert(vvcan(k2,it).le.1.d0,'vk^2 > 1');
+                  vk2  = DSQRT(        vvcan(k2,it) );
+                  uk2  = DSQRT( 1.d0 - vvcan(k2,it) );
+                  ek2  = eecan(k2,it);
+                  dk2  = decan(k2,it);
+                  eqp2 = DSQRT( (ek2-ala(it))**2 + dk2**2 );
+
+                  do k1 = kacan(ib,it)+1 , kacan(ib,it)+kdcan(ib,it)
+                      call assert(vvcan(k1,it).ge.0.d0,'vk^2 < 0');
+                      call assert(vvcan(k1,it).le.1.d0,'vk^2 > 1');
+                      vk1  = DSQRT(        vvcan(k1,it) );
+                      uk1  = DSQRT( 1.d0 - vvcan(k1,it) );
+                      ek1  = eecan(k1,it);
+                      dk1  = decan(k1,it);
+                      eqp1 = DSQRT( (ek1-ala(it))**2 + dk1**2 );
+
+
+                      denom1 = ( eqp1 + eqp2 )**1 + 1.d-8;
+                      denom2 = ( eqp1 + eqp2 )**2 + 1.d-8;
+                      denom3 = ( eqp1 + eqp2 )**3 + 1.d-8;
+
+
+                      tuv   = 2.d0 * ( uk1*vk2 + vk1*uk2 )**2;
+                      tuvc  = 2.d0 * ( uk1*vk2 - vk1*uk2 )**2 / denom1;
+                      tuve1 = tuv / denom1;
+                      tuve2 = tuv / denom2;
+                      tuve3 = tuv / denom3;
+
+
+
+                      BB1(it) = BB1(it) + tuvc * ajjx(k1,k2)**2;
+                      BB2(it) = BB2(it) + tuvc * ajjy(k1,k2)**2;
+                      BB3(it) = BB3(it) + tuvc * ajjz(k1,k2)**2;
+                      ! write(*,*) it , k1 , k2 , tuvc , ajjz(k1,k2)
+
+                      aM003 = aM003 + tuve3 * qq0(k1,k2)**2;
+                      aM223 = aM223 + tuve3 * qq2(k1,k2)**2;
+                      aM023 = aM023 + tuve3 * qq0(k1,k2)*qq2(k2,k1);
+
+                      aM002 = aM002 + tuve2 * qq0(k1,k2)**2;
+                      aM222 = aM222 + tuve2 * qq2(k1,k2)**2;
+                      aM022 = aM022 + tuve2 * qq0(k1,k2)*qq2(k2,k1);
+
+                      aM001 = aM001 + tuve1 * qq0(k1,k2)**2;
+                      aM221 = aM221 + tuve1 * qq2(k1,k2)**2;
+                      aM021 = aM021 + tuve1 * qq0(k1,k2)*qq2(k2,k1);
+
+                      aMp13 = aMp13 + tuve3 * qqx(k1,k2)**2;
+                      aMn13 = aMn13 + tuve3 * qqy(k1,k2)**2;
+                      aMn23 = aMn23 + tuve3 * qqz(k1,k2)**2;
+
+                      aMp12 = aMp12 + tuve2 * qqx(k1,k2)**2;
+                      aMn12 = aMn12 + tuve2 * qqy(k1,k2)**2;
+                      aMn22 = aMn22 + tuve2 * qqz(k1,k2)**2;
+
+
+                  enddo
+              enddo
+          enddo
+
+
+      ! write(*,*) it , BB1(it);
+
+      enddo
+
+
+
+
+
+
+
+
+
+
+      ! calculating B00,B02,B22
+      M1(1,1) = aM001;
+      M1(1,2) = aM021;
+      M1(2,1) = aM021;
+      M1(2,2) = aM221;
+
+      M3(1,1) = aM003;
+      M3(1,2) = aM023;
+      M3(2,1) = aM023;
+      M3(2,2) = aM223;
+      call invB_A_invB( M3 , M1 , invM1_M3_invM1 );
+
+      B00 = facm * invM1_M3_invM1(1,1);
+      B02 = facm * invM1_M3_invM1(1,2);
+      B20 = facm * invM1_M3_invM1(2,1);
+      B22 = facm * invM1_M3_invM1(2,2);
+
+      !call assert( ABS(B20-B02)/ABS(B20) .le. 1.d-10 , 'B20 != B02' );
+      ! write(77,*) 'aM001=',aM001
+      ! write(77,*) 'aM021=',aM021
+      ! write(77,*) 'aM221=',aM221
+      ! write(77,*) 'aM002=',aM002
+      ! write(77,*) 'aM022=',aM022
+      ! write(77,*) 'aM222=',aM222
+      ! write(77,*) 'aM003=',aM003
+      ! write(77,*) 'aM023=',aM023
+      ! write(77,*) 'aM223=',aM223
+      ! write(77,*) 'aMp13=',aMp13
+      ! write(77,*) 'aMn13=',aMn13
+      ! write(77,*) 'aMn23=',aMn23
+
+
+
+      ! translate B00,B02,B22 to Bbb,Bbg,Bgg
+      betax  = betg;
+      gammax = gamg/180.d0 * pi;
+      gammat = gammax;
+      if( betax .lt. 1.d-3 ) gammat = 0.d0;
+
+      cgcg = DCOS(gammat) * DCOS(gammat);
+      sgsg = DSIN(gammat) * DSIN(gammat);
+      sgcg = DSIN(gammat) * DCOS(gammat);
+
+      Bbb = B00*(+cgcg) + B22*(+sgsg) + B02*(+2.d0*sgcg);
+      Bbg = B00*(-sgcg) + B22*(+sgcg) + B02*(+cgcg-sgsg);
+      Bgg = B00*(+sgsg) + B22*(+cgcg) + B02*(-2.d0*sgcg);
+
+
+
+      ! translate BB1,BB2,BB3 to B1,B2,B3
+      BB1(3) = BB1(1) + BB1(2);
+      BB2(3) = BB2(1) + BB2(2);
+      BB3(3) = BB3(1) + BB3(2);
+
+      B1 = 0.d0;
+      B2 = 0.d0;
+      B3 = 0.d0;
+      if( betax .lt. 1.d-3 ) then
+
+         B1 = Bbb;
+         B2 = Bbb;
+         B3 = Bbb;
+
+      else
+
+         B1 = BB1(3)/( 2.d0*betax * DSIN( gammax - 2.d0/3.d0*pi ) )**2;
+         B2 = BB2(3)/( 2.d0*betax * DSIN( gammax - 4.d0/3.d0*pi ) )**2;
+         B3 = BB3(3)/( 2.d0*betax * DSIN( gammax - 6.d0/3.d0*pi ) )**2;
+
+         if( ABS( gammax - pi/3.d0 ) .le. 1.d-4 ) B2 = Bgg;
+         if( ABS( gammax - 0.d0    ) .le. 1.d-4 ) B3 = Bgg;
+
+      endif
+
+
+
+      ! calculating zero point energy
+      vvib = ( aM003*aM222 + aM223*aM002 - 2.d0*aM023*aM022 )
+     &       / ( 4.d0 * ( aM003*aM223 - aM023*aM023 ) );
+
+      vrot = ( aMp12/aMp13 + aMn12/aMn13 + aMn22/aMn23 ) / 4.d0;
+
+
+
+
+
+
+
+
+
+
+      ! printing part
+
+
+      ! This printing is weird, {betac,gammac} are not
+      ! even visible in this routine, and the common
+      ! block "etrrqq" containing {etot,rr2,q0p,q2p}
+      ! does not even exist in the original DIRHBT code.
+      ! I'll just comment it out for now and ignore it...
+!     if( lpr ) then
+!         write(l6,400) betac , gammac*180.d0/pi ,
+!    &                  etot , vvib , vrot ,
+!    &                  B1   , B2   , B3   ,
+!    &                  Bbb  , Bbg  , Bgg  ,
+!    &                  rr2  , q0p  , q2p  ;
+!     endif
+! 400 format( f8.4 , f8.2 , 15f12.4 )
+
+
+
+      if( lpr ) then
+
+          write(l6,'(a)')
+     &    '.....................................';
+
+          write(l6,'(a,3f15.6)')
+     &    ' Moment of inertia Jx................', BB1(1),BB1(2),BB1(3);
+
+          write(l6,'(a,1f15.6)')
+     &    '...................Bx................', B1;
+
+          write(l6,'(a,3f15.6)')
+     &    ' Moment of inertia Jy................', BB2(1),BB2(2),BB2(3);
+
+          write(l6,'(a,1f15.6)')
+     &    '...................By................', B2;
+
+          write(l6,'(a,3f15.6)')
+     &    ' Moment of inertia Jz................', BB3(1),BB3(2),BB3(3);
+
+          write(l6,'(a,1f15.6)')
+     &    '...................Bz................', B3;
+
+          write(l6,'(a,3f15.6)')
+     &    ' Mass parameters (Bbb,Bbg,Bgg).......', Bbb,Bbg,Bgg;
+
+          write(l6,'(a,3f15.6)')
+     &    ' Mass parameters (B00,B02,B22).......', B00,B02,B22;
+
+          write(l6,'(a,1f15.6)')
+     &    ' Rotational correction...............', vrot;
+
+          write(l6,'(a,1f15.6)')
+     &    ' Vibrational correction..............', vvib;
+
+          write(l6,'(a)')
+     &    '.....................................';
+
+
+
+          ! printout for particles
+          do it = 1 , 2
+
+              write(l6,'(a,a)')
+     &        ' single-particle exp in the canonical basis: ' , tit(it);
+              write(l6,'(a)')
+     &        '-------------------------------------------------------';
+
+              do ib = 1 , nb
+
+                  k1 = kacan(ib,it)+1;
+                  k2 = kacan(ib,it)+kdcan(ib,it);
+
+                  do k = k1 , k2
+                      ajxc = ajxcan(k,it);
+                      ajyc = ajycan(k,it);
+                      ajzc = ajzcan(k,it);
+
+                      write(l6,'(2i4,3f10.5)')
+     &                it , k , ajxc , ajyc , ajzc;
+
+                  enddo
+
+              enddo
+
+          enddo
+
+
+
+      endif
+
+
+
+      ! This printing is also weird, because the
+      ! common block "etrrgg" containing {etot,rr2,q0p,q2p}
+      ! does not even exist in the original DIRHBT code.
+      ! I'll just comment it out for now and ignore it...
+!     open( 49 , file = 'cpar.out'  , status = 'unknown' );
+!     open( 47 , file = 'cparo.out' , status = 'unknown' );
+!
+!     write( 47 , 100 );
+!     write( 49 , 200 );
+!
+!100  format(2x,'beta',4x,'gamm',10x,'Eb',10x,'Vvib',10x,'Vrot',10x,
+!    &       'Bx',10x,'By',10x,'Bz',10x,'B00',10x,'B02',10x,'B22',
+!    &       8x,'Rc^2',10x,'Q20(eb)',10x,'Q22(eb)');
+!200  format(2x,'beta',4x,'gamm',10x,'Eb',10x,'B1',10x,'B2',10x,'B3',
+!    &       10x,'Bbb',10x,'Bbg',10x,'Bgg',10x,'Rc^2',10x,'Q20(eb)',
+!    &       10x,'Q22(eb)');
+!
+!     write(47,400) betg   , gamg   ,
+!    &              etot   , vvib   , vrot   ,
+!    &              BB1(3) , BB2(3) , BB3(3) ,
+!    &              B00    , B02    , B22    ,
+!    &              rr2    , q0p    , q2p    ;
+!
+!     write(49,400) betg   , gamg   ,
+!    &              etot-vvib-vrot  ,
+!    &              B1      , B2    , B3     ,
+!    &              Bbb    , Bbg    , Bgg    ,
+!    &              rr2    , q0p    , q2p    ;
+!
+!     close(47);
+!     close(49);
+
+
+
+
+
+
+
+
+
+
+      ! deallocation of local memory
+      deallocate( qxx  );
+      deallocate( qyy  );
+      deallocate( qzz  );
+      deallocate( qxy  );
+      deallocate( qxz  );
+      deallocate( qyz  );
+
+      deallocate( ajx  );
+      deallocate( ajy  );
+      deallocate( ajz  );
+
+      deallocate( vt   );
+      deallocate( ut   );
+      deallocate( ek   );
+      deallocate( eqp  );
+      deallocate( kk   );
+
+      deallocate( qq0  );
+      deallocate( qq2  );
+      deallocate( qqx  );
+      deallocate( qqy  );
+      deallocate( qqz  );
+      deallocate( ajjx );
+      deallocate( ajjy );
+      deallocate( ajjz );
+
+      deallocate( BB1  );
+      deallocate( BB2  );
+      deallocate( BB3  );
+
+      deallocate( s1  );
+      deallocate( s2  );
+      deallocate( s3  );
+      deallocate( ss1 );
+      deallocate( ss2 );
+      deallocate( ss3 );
+      deallocate( sp1 );
+      deallocate( sn1 );
+      deallocate( sn2 );
+
+
+
+
+
+
+
+
+
+
+      if(lpr) then
+      write(l6,*) ' ****** END INERTIA *******************************';
+      endif
+
+      return;
+      end;
+
+c======================================================================c
+
+      subroutine  symmUtAU( n,k , alpha , A,LDA , U,LDU ,  C,LDC )
+
+c======================================================================c
+      ! Performs an update: C <-- C + alpha*( U^T * A * U )
+      ! [in]:  A     is n x n symmetric matrix
+      ! [in]:  U     is n x k matrix
+      ! [in]:  C     is k x k symmetric matrix on input
+      ! [in]:  alpha is real  scalar
+      !
+      ! [out]: C     is k x k symmetric matrix on output
+
+      implicit none;
+
+      integer n;
+      integer k;
+      integer LDA;
+      integer LDU;
+      integer LDC;
+
+      double precision alpha;
+
+      double precision A(LDA,n);
+      double precision U(LDU,k);
+      double precision C(LDC,k);
+
+      double precision Acpy(n,n);
+      double precision tmp1(n,k);
+      double precision tmp2(k,k);
+      integer i,j;
+
+
+      call assert( n .le. LDA , 'LDA too small' );
+      call assert( n .le. LDU , 'LDU too small' );
+      call assert( k .le. LDC , 'LDC too small' );
+
+
+      do j = 1 , n
+          do i = 1 , j-1
+              Acpy(i,j) = A(i,j);
+          enddo
+      enddo
+      do i = 1 , n
+          Acpy(i,i) = 0.5d0 * A(i,i);
+      enddo
+      do j = 1 , k
+          do i = 1 , n
+              tmp1(i,j) = U(i,j);
+          enddo
+      enddo
+
+      ! tmp1 = alpha * UpperTriangle(A) * U
+      call dtrmm( 'L','U','N','N', n,k, alpha , Acpy,n, tmp1,n );
+
+      ! tmp2 = U^T * tmp1 = alpha * U^T * UpperTriangle(A) * U
+      call dgemm( 'T','N', k,k,n, 1.d0, U,LDU, tmp1,n, 0.d0, tmp2,k );
+
+      ! C <-- C + tmp2 + tmp2^T = C + alpha*( U^T * A * U )
+      do j = 1 , k
+          do i = 1 , k
+              C(i,j) = C(i,j) + tmp2(i,j) + tmp2(j,i);
+          enddo
+      enddo
+
+
+      return;
+      end;
+
+c======================================================================c
+
+      subroutine asymmUtAU( n,k , alpha , A,LDA , U,LDU ,  C,LDC )
+
+c======================================================================c
+      ! Performs an update: C <-- C + alpha*( U^T * A * U )
+      ! [in]:  A     is n x n anti-symmetric matrix
+      ! [in]:  U     is n x k matrix
+      ! [in]:  C     is k x k anti-symmetric matrix on input
+      ! [in]:  alpha is real  scalar
+      !
+      ! [out]: C     is k x k anti-symmetric matrix on output
+
+      implicit none;
+
+      integer n;
+      integer k;
+      integer LDA;
+      integer LDU;
+      integer LDC;
+
+      double precision alpha;
+
+      double precision A(LDA,n);
+      double precision U(LDU,k);
+      double precision C(LDC,k);
+
+      double precision Acpy(n,n);
+      double precision tmp1(n,k);
+      double precision tmp2(k,k);
+      integer i,j;
+
+
+      call assert( n .le. LDA , 'LDA too small' );
+      call assert( n .le. LDU , 'LDU too small' );
+      call assert( k .le. LDC , 'LDC too small' );
+
+
+      do j = 1 , n
+          do i = 1 , j-1
+              Acpy(i,j) = A(i,j);
+          enddo
+      enddo
+      do i = 1 , n
+          Acpy(i,i) = 0.5d0 * A(i,i);
+      enddo
+      do j = 1 , k
+          do i = 1 , n
+              tmp1(i,j) = U(i,j);
+          enddo
+      enddo
+
+      ! tmp1 = alpha * UpperTriangle(A) * U
+      call dtrmm( 'L','U','N','N', n,k, alpha , Acpy,n, tmp1,n );
+
+      ! tmp2 = U^T * tmp1 = alpha * U^T * UpperTriangle(A) * U
+      call dgemm( 'T','N', k,k,n, 1.d0, U,LDU, tmp1,n, 0.d0, tmp2,k );
+
+      ! C <-- C + tmp2 - tmp2^T = C + alpha*( U^T * A * U )
+      do j = 1 , k
+          do i = 1 , k
+              C(i,j) = C(i,j) + tmp2(i,j) - tmp2(j,i);
+          enddo
+      enddo
+
+
+      return;
+      end;
+
+c======================================================================c
+
+      subroutine inverse2x2( A , invA )
+
+c======================================================================c
+      ! Calculates the inverse of a 2 x 2 regular matrix A
+      implicit none;
+
+      double precision A(2,2);
+      double precision invA(2,2);
+
+      double precision det;
+
+      det = A(1,1)*A(2,2) - A(1,2)*A(2,1);
+
+      invA(1,1) = + A(2,2) / det;
+      invA(1,2) = - A(1,2) / det;
+      invA(2,1) = - A(2,1) / det;
+      invA(2,2) = + A(1,1) / det;
+
+      return;
+      end;
+
+c======================================================================c
+
+      subroutine invB_A_invB( A , B , Ans )
+
+c======================================================================c
+      ! For 2 x 2 matrices A and B, returns Ans = inv(B) * A * inv(B)
+      implicit none;
+
+      double precision   A(2,2);
+      double precision   B(2,2);
+      double precision Ans(2,2);
+
+      double precision invB(2,2);
+
+      integer i,j,k1,k2;
+
+
+
+      call inverse2x2( B , invB );
+
+      do i = 1 , 2
+          do j = 1 , 2
+
+              Ans(i,j) = 0.d0;
+              do k1 = 1 , 2
+              do k2 = 1 , 2
+                  Ans(i,j) = Ans(i,j) + invB(i,k1)*A(k1,k2)*invB(k2,j);
+              enddo
+              enddo
+
+          enddo
+      enddo
+
+
+      return;
+      end;
+
+
+
+
+
+
+
+
+C======================================================================c
+c
+      subroutine inertia(lpr)
+c
+c======================================================================c
+c
+c     Calculates inertia and mass parameters in orcillator space
+c
+c     B1,B2,B3,Bbb,Bbg,Bgg
+c
+c     Refs:
+c     P. Ring and P. Schuk, 'The Nuclear Many-body Problem', p131
+c
+C----------------------------------------------------------------------c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+      logical lpr
+      character tb*5                                            ! blokap
+      character tp*1,tis*1,tit*8,tl*1                           ! textex
+      character tt*8                                            ! bloqua
+c
+      dimension qxx(ngx,ngx,2,nbx),qyy(ngx,ngx,2,nbx),qzz(ngx,ngx,2,nbx)
+      dimension qxy(ngx,ngx,2,nbx),qxz(ngx,ngx,2,nbx),qyz(ngx,ngx,2,nbx)
+      dimension ajx(nddx,2,nbx),ajy(nddx,2,nbx),ajz(nddx,2,nbx)
+      dimension vt(nkx),ut(nkx),ek(nkx),eqp(nkx),kk(nkx)
+      dimension qq0(nkx,nkx),qq2(nkx,nkx)
+      dimension qqx(nkx,nkx),qqy(nkx,nkx),qqz(nkx,nkx)
+      dimension ajjx(nkx,nkx),ajjy(nkx,nkx),ajjz(nkx,nkx)
+      dimension BB1(3),BB2(3),BB3(3)
+
+      common /mathco/ zero,one,two,half,third,pi
+      common /nucnuc/ amas,nama,npr(2),nucnam
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /baspar/ hom,hb0,b0
+      common /physco/ hbc,alphi,r0
+      common /blodir/ ka(nbx,4),kd(nbx,4)
+      common /blolev/ nk(4),ibk(nkx,4),tk(nkx,4)
+      common /optopt/ itx,icm,icou,ipc,inl,idd
+      common /gfviv / iv(0:igfv)
+      common /gfvsq / sq(0:igfv)
+      common /gfvsqi/ sqi(0:igfv)
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /blokap/ nb,mu(nbx),tb(nbx)
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+      common /erwar / ea,rms,betg,gamg
+      common /etrrqq/ etot,rr2,q0p,q2p
+      common /jexcan/ ajxcan(nkx,2),ajycan(nkx,2),ajzcan(nkx,2)
+      common /fermi / ala(2),tz(2)
+      common /textex/ tp(2),tis(2),tit(2),tl(0:30)
+      common /eeecan/ eecan(nkx,4),decan(nkx,4),vvcan(nkx,4),
+     &                fgcan(nhx,nkx,4),mulcan(nkx,4),akacan(nkx,4)
+      common /blocan/ kacan(nbx,4),kdcan(nbx,4),nkcan(4)
+
+c
+      open(49,file='cpar.out',status='unknown')
+      open(47,file='cparo.out',status='unknown')
+c
+c      write(47,100)
+c      write(49,200)
+ 100  format(2x,'beta',4x,'gamm',10x,'Eb',10x,'Vvib',10x,'Vrot',10x,
+     &       'Bx',10x,'By',10x,'Bz',10x,'B00',10x,'B02',10x,'B22',
+     &       8x,'Rc^2',10x,'Q20(eb)',10x,'Q22(eb)')
+ 200  format(2x,'beta',4x,'gamm',10x,'Eb',10x,'B1',10x,'B2',10x,'B3',
+     &       10x,'Bbb',10x,'Bbg',10x,'Bgg',10x,'Rc^2',10x,'Q20(eb)',
+     &       10x,'Q22(eb)')
+
+      if (lpr)
+     &write(l6,*) ' ****** BEGIN INERTIA *****************************'
+c
+      fac0 = sqrt(5./16./pi)         !Q20
+      fac2 = sqrt(15./16./pi)        !\sqrt(2)*Q22
+      fact = hom**2
+      facm = 9.*2.0736*(amas**(10./3.))/16./(pi**2)/(b0**4)
+c      write(*,*) 'facm=',facm
+c
+      sq2i = sqi(2)
+      sxx = bx**2/2.
+      syy = by**2/2.
+      szz = bz**2/2.
+      sx = sq2i*bx
+      sy = sq2i*by
+      sz = sq2i*bz
+c
+      do i=1,3
+         BB1(i) = zero
+         BB2(i) = zero
+         BB3(i) = zero
+      enddo
+      aM001 = zero
+      aM021 = zero
+      aM221 = zero
+      aM002 = zero
+      aM022 = zero
+      aM222 = zero
+      aM003 = zero
+      aM023 = zero
+      aM223 = zero
+      aMp13 = zero
+      aMn13 = zero
+      aMn23 = zero
+      aMp12 = zero
+      aMn12 = zero
+      aMn22 = zero
+c
+c---- loop over different blocks
+      do ib=1,nb
+         do ifg=1,2
+            nd = id(ib,ifg)
+            i0 = ia(ib,ifg)
+c
+            do n2=1,nd
+               id2 = i0+n2
+               nx2 = nxyz(id2,1)
+               ny2 = nxyz(id2,2)
+               nz2 = nxyz(id2,3)
+               nn2 = nx2+ny2+nz2
+c
+               qxx(n2,n2,ifg,ib) = 2.*(nx2+half)*sxx
+               qyy(n2,n2,ifg,ib) = 2.*(ny2+half)*syy
+               qzz(n2,n2,ifg,ib) = 2.*(nz2+half)*szz
+               qxy(n2,n2,ifg,ib) = zero
+               qxz(n2,n2,ifg,ib) = zero
+               qyz(n2,n2,ifg,ib) = zero
+c
+               do n1=n2+1,nd
+                  id1 = i0+n1
+                  nx1 = nxyz(id1,1)
+                  ny1 = nxyz(id1,2)
+                  nz1 = nxyz(id1,3)
+                  nn1 = nx1+ny1+nz1
+c
+                  txx = zero
+                  tyy = zero
+                  tzz = zero
+                  txy = zero
+                  txz = zero
+                  tyz = zero
+cc
+                  if (abs(nn2-nn1).le.2) then
+c
+                     if (ny2.eq.ny1.and.nz2.eq.nz1) then
+                        if (nx2.eq.nx1-2) txx = sxx*sq(nx2+1)*sq(nx1)
+                        if (nx2.eq.nx1+2) txx = sxx*sq(nx1+1)*sq(nx2)
+                     endif
+c
+                     if (nx2.eq.nx1.and.nz2.eq.nz1) then
+                        if (ny2.eq.ny1-2) tyy = -syy*sq(ny2+1)*sq(ny1)
+                        if (ny2.eq.ny1+2) tyy = -syy*sq(ny1+1)*sq(ny2)
+                     endif
+c
+                     if (nx2.eq.nx1.and.ny2.eq.ny1) then
+                        if (nz2.eq.nz1-2) tzz = szz*sq(nz2+1)*sq(nz1)
+                        if (nz2.eq.nz1+2) tzz = szz*sq(nz1+1)*sq(nz2)
+                     endif
+c
+                     if (nz2.eq.nz1) then
+                        if (nx2.eq.nx1-1.and.ny2.eq.ny1-1)
+     &                     txy = sq(nx1)*sq(ny1)
+                        if (nx2.eq.nx1+1.and.ny2.eq.ny1+1)
+     &                     txy = -sq(nx2)*sq(ny2)
+                        if (nx2.eq.nx1-1.and.ny2.eq.ny1+1)
+     &                     txy = -sq(nx1)*sq(ny2)
+                        if (nx2.eq.nx1+1.and.ny2.eq.ny1-1)
+     &                     txy = sq(nx2)*sq(ny1)
+                        txy = iv(nx2+ny2+1)*sx*sy*txy
+                     endif
+c
+                     if (ny2.eq.ny1) then
+                        if (nx2.eq.nx1-1.and.nz2.eq.nz1-1)
+     &                     txz = sq(nx1)*sq(nz1)
+                        if (nx2.eq.nx1+1.and.nz2.eq.nz1+1)
+     &                     txz = sq(nx2)*sq(nz2)
+                        if (nx2.eq.nx1-1.and.nz2.eq.nz1+1)
+     &                     txz = sq(nx1)*sq(nz2)
+                        if (nx2.eq.nx1+1.and.nz2.eq.nz1-1)
+     &                     txz = sq(nx2)*sq(nz1)
+                        txz = iv(ifg-1)*iv(nx2+ny2+1)*sx*sz*txz
+                     endif
+c
+                     if (nx2.eq.nx1) then
+                        if (nz2.eq.nz1-1.and.ny2.eq.ny1-1)
+     &                     tyz = sq(nz1)*sq(ny1)
+                        if (nz2.eq.nz1+1.and.ny2.eq.ny1+1)
+     &                     tyz = -sq(nz2)*sq(ny2)
+                        if (nz2.eq.nz1-1.and.ny2.eq.ny1+1)
+     &                     tyz = -sq(nz1)*sq(ny2)
+                        if (nz2.eq.nz1+1.and.ny2.eq.ny1-1)
+     &                     tyz = sq(nz2)*sq(ny1)
+                        tyz = iv(ifg-1)*sy*sz*tyz
+                     endif
+c
+                  endif
+cc
+                  qxx(n1,n2,ifg,ib) = txx
+                  qxx(n2,n1,ifg,ib) = txx
+                  qyy(n1,n2,ifg,ib) = tyy
+                  qyy(n2,n1,ifg,ib) = tyy
+                  qzz(n1,n2,ifg,ib) = tzz
+                  qzz(n2,n1,ifg,ib) = tzz
+c
+                  qxy(n1,n2,ifg,ib) =  txy
+                  qxy(n2,n1,ifg,ib) = -txy
+                  qxz(n1,n2,ifg,ib) =  txz
+                  qxz(n2,n1,ifg,ib) = -txz
+                  qyz(n1,n2,ifg,ib) =  tyz
+                  qyz(n2,n1,ifg,ib) = -tyz
+c
+               enddo   ! n1
+            enddo      ! n2
+
+            call sijx(ib,ifg,nd,ajx(1,ifg,ib),lpr)
+            call sijy(ib,ifg,nd,ajy(1,ifg,ib),lpr)
+            call sijz(ib,ifg,nd,ajz(1,ifg,ib),lpr)
+         enddo         ! ifg
+      enddo         ! ib
+c
+      do it=1,itx
+         km = 0
+         do k=1,nkcan(it)
+            vt(k) = sqrt(abs(vvcan(k,it)))
+            ut(k) = sqrt(abs(one-vvcan(k,it)))
+            ek(k) = eecan(k,it)
+c
+            eqp(k) = sqrt((ek(k)-ala(it))**2+decan(k,it)**2)
+c
+c            if ((ek(k)-ala(it)).lt.50.d0) then
+               km = km+1
+               kk(km) = k
+c            endif
+         enddo
+c
+c         km = nk(it)
+         do k1c=1,km
+            k1  = kk(k1c)
+            ib1 = ibk(k1,it)
+         do k2c=1,k1c
+            k2  = kk(k2c)
+            ib2 = ibk(k2,it)
+            if (ib1.eq.ib2) then
+               s1  = zero
+               s2  = zero
+               s3  = zero
+               ss1 = zero
+               ss2 = zero
+               ss3 = zero
+               sp1 = zero
+               sn1 = zero
+               sn2 = zero
+c
+               do ifg=1,2
+                  i0 = (ifg-1)*id(ib1,1)
+                  nd = id(ib1,ifg)
+                  do n2=1,nd
+                  do n1=1,nd
+                     fgt = fgcan(n1+i0,k1,it)*fgcan(n2+i0,k2,it)
+                     s1 = s1 + fgt*qxx(n1,n2,ifg,ib1)
+                     s2 = s2 + fgt*qyy(n1,n2,ifg,ib1)
+                     s3 = s3 + fgt*qzz(n1,n2,ifg,ib1)
+                     ss1 = ss1 + iv(ifg+1)*fgt
+     &                    *ajx(n1+(n2-1)*nd,ifg,ib1)
+                     ss2 = ss2 + iv(ifg+1)*fgt
+     &                    *ajy(n1+(n2-1)*nd,ifg,ib1)
+                     ss3 = ss3 + fgt
+     &                    *ajz(n1+(n2-1)*nd,ifg,ib1)
+                     sp1 = sp1 + fgt*qyz(n1,n2,ifg,ib1)
+                     sn1 = sn1 + fgt*qxz(n1,n2,ifg,ib1)
+                     sn2 = sn2 + fgt*qxy(n1,n2,ifg,ib1)
+                  enddo  ! n1
+                  enddo  ! n2
+               enddo     ! ifg
+c
+               qq0(k1,k2) = fac0*(2*s3-s1-s2)
+               qq0(k2,k1) = qq0(k1,k2)
+               qq2(k1,k2) = fac2*(s1-s2)
+               qq2(k2,k1) = qq2(k1,k2)
+               qqx(k1,k2) = 2.*sp1
+               qqx(k2,k1) = 2.*sp1
+               qqy(k1,k2) = 2.*sn1
+               qqy(k2,k1) = 2.*sn1
+               qqz(k1,k2) = 2.*sn2
+               qqz(k2,k1) = 2.*sn2
+               ajjx(k1,k2) = ss1
+               ajjx(k2,k1) = ss1
+               ajjy(k1,k2) = ss2
+               ajjy(k2,k1) = ss2
+               ajjz(k1,k2) = ss3
+               ajjz(k2,k1) = ss3
+c
+            endif
+c
+         enddo  ! k2
+         ajxcan(k1,it)=ajjx(k1,k1)
+         ajycan(k1,it)=ajjy(k1,k1)
+         ajzcan(k1,it)=ajjz(k1,k1)
+         enddo  ! k1
+cc
+         do k1c=1,km
+            k1   = kk(k1c)
+            ib1  = ibk(k1,it)
+            mk   = 2!mu(k1,it)
+c
+         do k2c=1,km
+            k2  = kk(k2c)
+            ib2 = ibk(k2,it)
+            if (ib1.eq.ib2) then
+c
+               tuvc  = mk*(ut(k1)*vt(k2)-vt(k1)*ut(k2))**2/
+     &                (eqp(k1)+eqp(k2)+1.d-8)
+               tuv   = mk*(ut(k1)*vt(k2)+vt(k1)*ut(k2))**2
+               tuve3 = tuv/((eqp(k1)+eqp(k2))**3+1.d-8)
+               tuve2 = tuv/((eqp(k1)+eqp(k2))**2+1.d-8)
+               tuve1 = tuv/(eqp(k1)+eqp(k2)+1.d-8)
+cc
+               BB1(it) = BB1(it) + tuvc*ajjx(k1,k2)**2
+               BB2(it) = BB2(it) + tuvc*ajjy(k1,k2)**2
+               BB3(it) = BB3(it) + tuvc*ajjz(k1,k2)**2
+c               write(*,*) it,k1,k2,tuvc,ajjz(k1,k2)
+cc
+               aM003 = aM003 + tuve3*qq0(k1,k2)**2
+               aM223 = aM223 + tuve3*qq2(k1,k2)**2
+               aM023 = aM023 + tuve3*qq0(k1,k2)*qq2(k2,k1)
+c
+               aM002 = aM002 + tuve2*qq0(k1,k2)**2
+               aM222 = aM222 + tuve2*qq2(k1,k2)**2
+               aM022 = aM022 + tuve2*qq0(k1,k2)*qq2(k2,k1)
+c
+               aM001 = aM001 + tuve1*qq0(k1,k2)**2
+               aM221 = aM221 + tuve1*qq2(k1,k2)**2
+               aM021 = aM021 + tuve1*qq0(k1,k2)*qq2(k2,k1)
+c
+               aMp13 = aMp13 + tuve3*qqx(k1,k2)**2
+               aMn13 = aMn13 + tuve3*qqy(k1,k2)**2
+               aMn23 = aMn23 + tuve3*qqz(k1,k2)**2
+c
+               aMp12 = aMp12 + tuve2*qqx(k1,k2)**2
+               aMn12 = aMn12 + tuve2*qqy(k1,k2)**2
+               aMn22 = aMn22 + tuve2*qqz(k1,k2)**2
+cc
+            endif
+         enddo  ! k2c
+         enddo  ! k1c
+c
+      write(*,*) it,BB1(it)
+      enddo  ! it
+c
+      BB1(3) = (BB1(1) + BB1(2))
+      BB2(3) = (BB2(1) + BB2(2))
+      BB3(3) = (BB3(1) + BB3(2))
+c
+      facm = facm/(aM001*aM221-aM021**2)**2
+      a1  =  aM001
+      b1  =  aM021
+      c1  =  aM221
+      a3  =  aM003
+      b3  =  aM023
+      c3  =  aM223
+      write(77,*) 'aM001=',aM001
+      write(77,*) 'aM021=',aM021
+      write(77,*) 'aM221=',aM221
+      write(77,*) 'aM002=',aM002
+      write(77,*) 'aM022=',aM022
+      write(77,*) 'aM222=',aM222
+      write(77,*) 'aM003=',aM003
+      write(77,*) 'aM023=',aM023
+      write(77,*) 'aM223=',aM223
+      write(77,*) 'aMp13=',aMp13
+      write(77,*) 'aMn13=',aMn13
+      write(77,*) 'aMn23=',aMn23
+c
+      B00 = c1*c1*a3+b1*b1*c3-2.*b1*c1*b3
+      B02 = (b1**2+a1*c1)*b3-b1*c1*a3-a1*b1*c3
+      B22 = b1*b1*a3+a1*a1*c3-2.*a1*b1*b3
+
+c
+      B00 = B00*facm
+      B02 = B02*facm
+      B22 = B22*facm
+c
+c---- Translate B00,B02,B22 to Bbb,Bbg,Bgg -----
+      betax = betg
+      gammax = gamg*pi/180.d0
+      if (betax.lt.1.d-3) then
+         gammat = 0.d0
+      else
+         gammat = gammax
+      endif
+      co2 = (cos(gammat))**2
+      si2 = (sin(gammat))**2
+      sc2 = sin(gammat)*cos(gammat)
+      Bbb = B00*co2+B22*si2+2.*B02*sc2
+      Bgg = B00*si2+B22*co2-2.*B02*sc2
+      Bbg = (B22-B00)*sc2+B02*(co2-si2)
+c
+c---- Translate J_1,J_2,J_3 to B_1,B_2,B_3 -----
+      if (betax.lt.1.d-3) then
+         B1 = Bbb
+         B2 = Bbb
+         B3 = Bbb
+      else
+         B1 = 0.25*BB1(3)/(betax**2)/((sin(2.*pi/3.-gammax))**2)
+         if (abs(gammax).gt.1.d-4) then
+            B3 = 0.25*BB3(3)/(betax**2)/((sin(gammax))**2)
+         else
+            B3 = Bgg
+         endif
+         if (abs(gammax-pi/3.).gt.1.d-4) then
+            B2 = 0.25*BB2(3)/(betax**2)/
+     &           ((sin(2.*pi/3.+gammax))**2)
+         else
+            B2 = Bgg
+         endif
+      endif
+c
+c---- Zero point energy -------------------------------------
+      vvib = (aM003*aM222+aM223*aM002-2.*aM023*aM022)
+     &       /(aM003*aM223-aM023**2)/4.
+      vrot = (aMp12/aMp13 + aMn12/aMn13 + aMn22/aMn23)/4.
+c------------------------------------------------------------
+c
+      write(47,400) betg,gamg,etot,vvib,vrot,BB1(3),
+     &              BB2(3),BB3(3),B00,B02,B22,rr2,q0p,q2p
+      write(49,400) betg,gamg,etot-vvib-vrot,B1,B2,
+     &              B3,Bbb,Bbg,Bgg,rr2,q0p,q2p
+      if(lpr) write(l6,400) betac,gammac*180/pi,etot,vvib,vrot,B1,
+     &              B2,B3,Bbb,Bbg,Bgg,rr2,q0p,q2p
+  400 format(f8.4,f8.2,15f12.4)
+c  400 format(f8.4,f8.2,15f15.6)
+
+      if(lpr) then
+c     moments of inertia
+         write(l6,300) ' Moment of inertia Jx......',BB1
+         write(l6,302) '...................Bx......',B1
+         write(l6,300) ' Moment of inertia Jy......',BB2
+         write(l6,302) '...................By......',B2
+         write(l6,300) ' Moment of inertia Jz......',BB3
+         write(l6,302) '...................Bz......',B3
+         write(l6,300) ' Mass parameters...........',Bbb,Bbg,Bgg
+         write(l6,300) ' Mass parameters...........',B00,B02,B22
+         write(l6,302) ' Rotational correction.....',vrot
+         write(l6,302) ' Vibrational correction....',vvib
+c------- printout for particles
+         do it=1,2
+         write(l6,110) tit(it)
+  110    format(' single-particle exp ',1x,
+     &          'in the canonical basis: ',a,/,1x,66(1h-))
+         do ib=1,nb
+            k1 = kacan(ib,it)+1
+            k2 = kacan(ib,it)+kdcan(ib,it)
+            do k = k1,k2
+               ajxc=ajxcan(k,it)
+               ajyc=ajycan(k,it)
+               ajzc=ajzcan(k,it)
+	       write(l6,101) it,k,ajxc,ajyc,ajzc
+  101       format(2i4,3f10.5)
+           enddo  ! k
+         enddo !ib
+         enddo !it
+      endif
+  300 format(a,3f15.6)
+  302 format(a,f15.6)
+      close(47)
+      close(49)
+c
+      if (lpr)
+     &write(l6,*) ' ****** END INERTIA *******************************'
+c
+      return
+C-end-inertia
+      end
+c
+c
+c======================================================================c
+      subroutine sijx(ib,ifg,nd,ajx,lpr)
+c======================================================================c
+c
+c     Calculates Single particle Cranking term  <i1|Jx|i2>
+c
+c           ( *         )
+c           ( * *       )
+c     tt =  ( 0 0 *     )
+c           ( 0 0 * *   )
+c           ( 0 0 * * * )
+c
+c----------------------------------------------------------------------
+c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+c
+      logical lpr
+c
+      character tt*8                                            ! bloqua
+c
+      dimension ajx(nd,nd)
+c
+c---test
+      dimension fjx(nd,nd),j(nd),ez(nd)
+c---test
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /gfviv / iv(0:igfv)
+      common /gfvsq / sq(0:igfv)
+      common /mathco/ zero,one,two,half,third,pi
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+c
+      sum= 0.5d0*(by/bz+bz/by)
+      dif= 0.5d0*(by/bz-bz/by)
+      i0d=ia(ib,ifg)
+c
+      do n2=1,nd
+         nx2= nxyz(i0d+n2,1)
+         ny2= nxyz(i0d+n2,2)
+         nz2= nxyz(i0d+n2,3)
+         do n1=n2,nd
+            nx1= nxyz(i0d+n1,1)
+            ny1= nxyz(i0d+n1,2)
+            nz1= nxyz(i0d+n1,3)
+c
+            s=zero
+c
+            if (nx1.eq.nx2) then
+c
+c------------- sigma_x
+               if (nz2.eq.nz1.and.ny2.eq.ny1)
+     &              s =  0.5d0*iv(nx2+1)
+c
+c------------- l_x
+               if (nz2.eq.nz1+1.and.ny2.eq.ny1+1)
+     &              s = dif*sq(nz2)*sq(ny2)
+c
+               if (nz2.eq.nz1-1.and.ny2.eq.ny1-1)
+     &              s = dif*sq(nz1)*sq(ny1)
+c
+               if (nz2.eq.nz1+1.and.ny2.eq.ny1-1)
+     &              s = -sum*sq(nz2)*sq(ny1)
+c
+               if (nz2.eq.nz1-1.and.ny2.eq.ny1+1)
+     &              s = -sum*sq(nz1)*sq(ny2)
+c
+            endif
+c
+            ajx(n1,n2) = s
+            ajx(n2,n1) = s
+c
+         enddo  ! n1
+      enddo  !n2
+c
+c---- test this part
+c          call aprint(1,1,6,nd,nd,nd,ajx,' ',' ','agular-m')
+c---- Diagonalisation
+cc        call sdiag(nd,nd,ajx,j,ajx,ez,+1)
+c
+cc        call aprint(1,1,6,1,1,nd,j,' ',' ','eigen-ag')
+cc        call aprint(1,1,6,nd,nd,nd,ajx,' ',' ','eigen')
+c---- end of test
+      return
+c-end-SIJX
+      end
+c
+c
+c======================================================================c
+      subroutine sijy(ib,ifg,nd,ajy,lpr)
+c======================================================================c
+c
+c     Calculates Single particle Cranking term  <\bar i1|Jy|i2>
+c
+c           ( *         )
+c           ( * *       )
+c     tt =  ( 0 0 *     )
+c           ( 0 0 * *   )
+c           ( 0 0 * * * )
+c
+c----------------------------------------------------------------------
+c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+c
+      logical lpr
+c
+      character tt*8                                            ! bloqua
+c
+      dimension ajy(nd,nd)
+c
+c---test
+      dimension fjy(nd,nd),j(nd),ez(nd)
+c---test
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /gfviv / iv(0:igfv)
+      common /gfvsq / sq(0:igfv)
+      common /mathco/ zero,one,two,half,third,pi
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+c
+      sum= 0.5d0*(bz/bx+bx/bz)
+      dif= 0.5d0*(bz/bx-bx/bz)
+      i0d=ia(ib,ifg)
+c
+      do n2=1,nd
+         nx2= nxyz(i0d+n2,1)
+         ny2= nxyz(i0d+n2,2)
+         nz2= nxyz(i0d+n2,3)
+         do n1=n2,nd
+            nx1= nxyz(i0d+n1,1)
+            ny1= nxyz(i0d+n1,2)
+            nz1= nxyz(i0d+n1,3)
+c
+            s=zero
+c
+            if (ny1.eq.ny2) then
+c
+c------------- sigma_y
+               if (nx2.eq.nx1.and.nz2.eq.nz1)
+     &              s =  0.5d0*iv(nx2)
+c
+c------------- l_x
+               if (nx2.eq.nx1+1.and.nz2.eq.nz1+1)
+     &              s =  dif*sq(nx2)*sq(nz2)
+c
+               if (nx2.eq.nx1-1.and.nz2.eq.nz1-1)
+     &              s = -dif*sq(nx1)*sq(nz1)
+c
+               if (nx2.eq.nx1+1.and.nz2.eq.nz1-1)
+     &              s =  sum*sq(nx2)*sq(nz1)
+c
+               if (nx2.eq.nx1-1.and.nz2.eq.nz1+1)
+     &              s = -sum*sq(nx1)*sq(nz2)
+c
+            endif
+c
+            ajy(n1,n2) = s*iv(nx2+ny2+1)
+            ajy(n2,n1) = ajy(n1,n2)
+c
+         enddo  ! n1
+      enddo  !n2
+c
+c---- test this part
+c          call aprint(1,1,6,nd,nd,nd,ajy,' ',' ','agular-m')
+c---- Diagonalisation
+cc        call sdiag(nd,nd,ajy,j,ajy,ez,+1)
+c
+cc        call aprint(1,1,6,1,1,nd,j,' ',' ','eigen-ag')
+cc        call aprint(1,1,6,nd,nd,nd,ajy,' ',' ','eigen')
+c---- end of test
+      return
+c-end-SIJY
+      end
+c
+c
+c======================================================================c
+      subroutine sijz(ib,ifg,nd,ajz,lpr)
+c======================================================================c
+c
+c     Calculates Single particle Cranking term  <\bar i1|Jz|i2>
+c
+c           ( *         )
+c           ( * *       )
+c     tt =  ( 0 0 *     )
+c           ( 0 0 * *   )
+c           ( 0 0 * * * )
+c
+c----------------------------------------------------------------------
+c
+      implicit real*8 (a-h,o-z)
+c
+      include 'dirhb.par'
+c
+      logical lpr
+c
+      character tt*8                                            ! bloqua
+c
+      dimension ajz(nd,nd)
+c
+c---test
+      dimension fjz(nd,nd),j(nd),ez(nd)
+c---test
+      common /basdef/ beta0,gamma0,bx,by,bz
+      common /bloosc/ ia(nbx,2),id(nbx,2)
+      common /bloqua/ nt,nxyz(ntx,3),ns(ntx),np(ntx),tt(ntx)
+      common /gfviv / iv(0:igfv)
+      common /gfvsq / sq(0:igfv)
+      common /mathco/ zero,one,two,half,third,pi
+      common /tapes / l6,lin,lou,lwin,lwou,lplo
+c
+      sum= 0.5d0*(bx/by+by/bx)
+      dif= 0.5d0*(bx/by-by/bx)
+      i0d=ia(ib,ifg)
+c
+      do n2=1,nd
+         nx2= nxyz(i0d+n2,1)
+         ny2= nxyz(i0d+n2,2)
+         nz2= nxyz(i0d+n2,3)
+         do n1=n2,nd
+            nx1= nxyz(i0d+n1,1)
+            ny1= nxyz(i0d+n1,2)
+            nz1= nxyz(i0d+n1,3)
+c
+            s=zero
+c
+            if (nz1.eq.nz2) then
+c
+c------------- sigma_y
+               if (nx2.eq.nx1.and.ny2.eq.ny1)
+     &              s =  0.5d0
+c
+c------------- l_x
+               if (nx2.eq.nx1+1.and.ny2.eq.ny1+1)
+     &              s =  dif*sq(nx2)*sq(ny2)
+c
+               if (nx2.eq.nx1-1.and.ny2.eq.ny1-1)
+     &              s =  dif*sq(nx1)*sq(ny1)
+c
+               if (nx2.eq.nx1+1.and.ny2.eq.ny1-1)
+     &              s =  sum*sq(nx2)*sq(ny1)
+c
+               if (nx2.eq.nx1-1.and.ny2.eq.ny1+1)
+     &              s =  sum*sq(nx1)*sq(ny2)
+c
+            endif
+c
+            ajz(n1,n2) = s*iv(nx2+ny2+1)
+            ajz(n2,n1) = ajz(n1,n2)
+c
+         enddo  ! n1
+      enddo  !n2
+c
+c---- test this part
+c          call aprint(1,1,6,nd,nd,nd,ajz,' ',' ','agular-m')
+c---- Diagonalisation
+cc        call sdiag(nd,nd,ajz,j,ajz,ez,+1)
+c
+cc        call aprint(1,1,6,1,1,nd,j,' ',' ','eigen-ag')
+cc        call aprint(1,1,6,nd,nd,nd,ajz,' ',' ','eigen')
+c---- end of test
+      return
+c-end-SIJZ
+      end
 
 
 

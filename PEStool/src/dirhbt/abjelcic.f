@@ -79,13 +79,13 @@ c---- center-of-mass correction
       write(6,'(a,f10.3,a)')'  Elapsed time(centmass corr.): ',time,'s';
 #endif
 c---- results
-      !no need to waste memory when calculating large-scale PES...  
+      !no need to waste memory when calculating large-scale PES...
       !call resu(.true.);
       !call plot(.false.);
       call expect(2,.true.);
-      
+
 c---- punching of potentials to tape
-      !no need to waste memory when calculating large-scale PES...  
+      !no need to waste memory when calculating large-scale PES...
       !call inout(2,.false.);
       !call dinout(2,.false.);
 
@@ -480,7 +480,7 @@ c======================================================================c
 
       write(6,*);
       write(6,*)'*****************************************************';
-      write(6,*)'* Speedup by A.Bjelcic & Z.Drmac                    *';
+      write(6,*)'* Speedup by A.Bjelcic, T.Niksic and Z.Drmac        *';
       write(6,*)'*                                                   *';
       write(6,*)'* This is the original DIRHBT code (2014) directly  *';
       write(6,*)'* from CPC program library with few modifications:  *';
