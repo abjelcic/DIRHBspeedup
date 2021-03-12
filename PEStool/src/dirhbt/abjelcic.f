@@ -90,7 +90,7 @@ c---- punching of potentials to tape
       !call dinout(2,.false.);
       
       call tictoc('tic',time);
-      call inertia_abjelcic( .false. );
+      call inertia_abjelcic( .true. );
       call tictoc('toc',time);
       write(6,'(a,f10.3,a)')'  Elapsed time(inertia       ): ',time,'s';
       
