@@ -6,7 +6,8 @@ DBGFLAGS = -g -cpp -fcheck=all -DDEBUG -mcmodel=large
 
 ORIGFLAGS = -O3 -cpp -DORIGINAL -mcmodel=large -march=native
 
-BLAS = -I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib/ -lopenblas
+BLAS = -lopenblas
+     #-I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib/
      # -lblas
      # /opt/OpenBLAS/lib/libopenblas.a
 
